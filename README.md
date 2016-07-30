@@ -1,7 +1,7 @@
 XLTSearch
 =========
 
-XLTSearch is a high-performance, portable and configurable desktop search application / information retreival system intended for fast, full-text and metadata searches over a large but relatively unchanging collection of documents.  XLTSearch uses the JavaFX platform (X), the Apache Lucene full-text search library (L) and the Apache Tika content analysis toolkit (T).  Other than Java and JavaFX 8, XLTSearch has no other external dependencies, enabling the creation of portable, fully seachable document repositories.
+XLTSearch is a high-performance, portable and configurable desktop search application / information retrieval system intended for fast, full-text and metadata searches over a large but relatively unchanging collection of documents.  XLTSearch uses the JavaFX platform (X), the Apache Lucene full-text search library (L) and the Apache Tika content analysis toolkit (T).  Other than Java and JavaFX 8, XLTSearch has no other external dependencies, enabling the creation of portable, fully searchable document repositories.
 
 **Current version:** XLTSearch 0.0.1 includes Apache Lucene 4.6.1 and Apache Tika 1.13.
 
@@ -12,7 +12,7 @@ XLTSearch is inspired by two similar open-source projects: [DocFetcher](http://d
 
   * XLTSearch supports all file types supported by Apache Tika.
   * XLTSearch extracts a common set of metadata from all documents (where available) and makes these fields searchable.
-  * XLTSearch supports multiple indices over a set of documents, enabling the use of different analzers / configurations for different applications.
+  * XLTSearch supports multiple indices over a set of documents, enabling the use of different analyzers / configurations for different applications.
   * XLTSearch exposes the full functionality of the "classic" Lucene query parser to the user.
   * XLTSearch is permissively licensed under the Apache License 2.0.
 
