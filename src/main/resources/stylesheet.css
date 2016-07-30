@@ -1,0 +1,21 @@
+.root {
+    -fx-accent: #729fcf;
+}
+
+.progress-bar .bar {
+    -fx-accent: #73d216;
+}
+
+.info-bar {
+    -fx-background-color: #3465a4;
+    -fx-text-fill: white;
+}
+
+.caption {
+    -fx-font-weight: bold;
+}
+
+.alert {
+    -fx-background-color: #cc0000;
+    -fx-text-fill: white;
+}
