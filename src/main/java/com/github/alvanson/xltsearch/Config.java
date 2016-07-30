@@ -45,7 +45,7 @@ import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.collections.FXCollections;
 
 class Config {
-    public static final String XLT_VERSION = "0.0.1";
+    public static final String XLT_VERSION = "0.0.2-SNAPSHOT";
 
     public static final long INDEX_UPDATE_FAILED = -1;
     public static final long INDEX_NEVER_CREATED = -2;
