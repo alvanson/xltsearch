@@ -88,20 +88,17 @@ class SearchTask extends BaseTask<List<SearchResult>> {
             updateMessage(hits.length + " results");
         } catch (IOException ex) {
             updateMessage("I/O exception");
-            addMessage(Message.Level.ERROR,
-                "I/O exception while reading index", getStackTrace(ex));
+            addMessage(Message.Level.ERROR, "I/O exception while reading index", ex);
         } catch (ParseException ex) {
             updateMessage("Parse error");
-            addMessage(Message.Level.WARN,
-                "Parse exception while parsing '" + qstr + "'", getStackTrace(ex));
+            addMessage(Message.Level.WARN, "Parse exception while parsing '" + qstr + "'", ex);
         }
         // close ireader
         if (ireader != null) {
             try {
                 ireader.close();
             } catch (IOException ex) {
-                addMessage(Message.Level.WARN,
-                    "I/O exception while closing index reader", getStackTrace(ex));
+                addMessage(Message.Level.WARN, "I/O exception while closing index reader", ex);
             }
         }
         return results;

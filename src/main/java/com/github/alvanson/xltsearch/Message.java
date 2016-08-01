@@ -14,6 +14,9 @@
  */
 package com.github.alvanson.xltsearch;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 class Message {
     static enum Level {
         INFO, WARN, ERROR
@@ -29,5 +32,15 @@ class Message {
         this.level = level;
         this.summary = summary;
         this.details = details;
+    }
+
+    Message(String from, Level level, String summary, Throwable ex) {
+        this(from, level, summary, getStackTrace(ex));
+    }
+
+    static String getStackTrace(Throwable ex) {
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 }

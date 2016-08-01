@@ -14,8 +14,6 @@
  */
 package com.github.alvanson.xltsearch;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.ReadOnlyListWrapper;
@@ -32,10 +30,10 @@ abstract class BaseTask<V> extends Task<V> {
             messages.get().add(new Message(className, level, summary, details)));
     }
 
-    protected final String getStackTrace(Throwable ex) {
-        StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
+    protected final void addMessage(Message.Level level, String summary, Throwable ex) {
+        final String className = getClass().getSimpleName();
+        Platform.runLater(() ->
+            messages.get().add(new Message(className, level, summary, ex)));
     }
 
     protected final ReadOnlyListProperty<Message> messagesProperty() {

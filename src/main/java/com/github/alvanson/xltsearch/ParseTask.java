@@ -66,18 +66,15 @@ class ParseTask extends BaseTask<Boolean> {
                         } catch (IOException ex) {
                             docket.status = Docket.Status.PASS;
                             addMessage(Message.Level.WARN,
-                                "I/O exception while processing " + docket.relPath,
-                                getStackTrace(ex));
+                                "I/O exception while processing " + docket.relPath, ex);
                         } catch (SAXException ex) {
                             docket.status = Docket.Status.PASS;
                             addMessage(Message.Level.WARN,
-                                "SAX exception while processing " + docket.relPath,
-                                getStackTrace(ex));
+                                "SAX exception while processing " + docket.relPath, ex);
                         } catch (TikaException ex) {
                             docket.status = Docket.Status.PASS;
                             addMessage(Message.Level.WARN,
-                                "Tika exception while processing " + docket.relPath,
-                                getStackTrace(ex));
+                                "Tika exception while processing " + docket.relPath, ex);
                         }
                         // fall through
                     case PASS:    // fall through
@@ -103,7 +100,7 @@ class ParseTask extends BaseTask<Boolean> {
                 updateMessage("cancelled");
             } else {
                 updateMessage("interrupted");
-                addMessage(Message.Level.ERROR, "Interrupted", getStackTrace(ex));
+                addMessage(Message.Level.ERROR, "Interrupted", ex);
             }
         }
         return result;

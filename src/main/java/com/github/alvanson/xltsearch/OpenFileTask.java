@@ -32,8 +32,7 @@ class OpenFileTask extends BaseTask<Void> {
         try {
             desktop.open(file);
         } catch (IOException ex) {
-            addMessage(Message.Level.ERROR,
-                "Could not open file " + file.getName(), getStackTrace(ex));
+            addMessage(Message.Level.ERROR, "Could not open file " + file.getName(), ex);
         }
         return null;
     }
