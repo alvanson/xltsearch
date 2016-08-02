@@ -25,8 +25,6 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
@@ -220,7 +218,7 @@ class Config {
             Files.deleteIfExists(getHashSumsFile().toPath());
             set("last.updated", Long.toString(INDEX_NEVER_CREATED));
         } catch (IOException ex) {
-            addMessage(Message.Level.ERROR, "Could not clear index", getStackTrace(ex));
+            addMessage(Message.Level.ERROR, "Could not clear index", ex);
         }
     }
 
@@ -228,7 +226,7 @@ class Config {
         try {
             deltree(configDir);
         } catch (IOException ex) {
-            addMessage(Message.Level.ERROR, "Could not delete configuration", getStackTrace(ex));
+            addMessage(Message.Level.ERROR, "Could not delete configuration", ex);
         }
         // CAUTION! Behaviour of this object after delete() is undefined!
     }
@@ -257,10 +255,8 @@ class Config {
         messages.get().add(new Message(getClass().getSimpleName(), level, title, details));
     }
 
-    private final String getStackTrace(Throwable ex) {
-        StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
+    private void addMessage(Message.Level level, String title, Throwable ex) {
+        messages.get().add(new Message(getClass().getSimpleName(), level, title, ex));
     }
 
     String getName() { return name; }

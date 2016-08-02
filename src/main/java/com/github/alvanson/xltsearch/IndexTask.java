@@ -103,14 +103,13 @@ class IndexTask extends BaseTask<Map<String,String>> {
             updateProgress(n, n);
         } catch (IOException ex) {
             updateMessage("I/O exception");
-            addMessage(Message.Level.ERROR,
-                "I/O exception while writing to index", getStackTrace(ex));
+            addMessage(Message.Level.ERROR, "I/O exception while writing to index", ex);
         } catch (InterruptedException ex) {
             if (isCancelled()) {
                 updateMessage("cancelled");
             } else {
                 updateMessage("interrupted");
-                addMessage(Message.Level.ERROR, "Interrupted", getStackTrace(ex));
+                addMessage(Message.Level.ERROR, "Interrupted", ex);
             }
         }
         // close iwriter
@@ -118,8 +117,7 @@ class IndexTask extends BaseTask<Map<String,String>> {
             try {
                 iwriter.close();
             } catch (IOException ex) {
-                addMessage(Message.Level.WARN,
-                    "I/O exception while closing index writer", getStackTrace(ex));
+                addMessage(Message.Level.WARN, "I/O exception while closing index writer", ex);
             }
         }
         return hashSums;

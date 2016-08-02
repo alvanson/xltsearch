@@ -79,7 +79,7 @@ class SelectTask extends BaseTask<Boolean> {
                     }
                 } catch (IOException ex) {
                     addMessage(Message.Level.WARN,
-                        "I/O exception while processing " + relPath, getStackTrace(ex));
+                        "I/O exception while processing " + relPath, ex);
                 }
                 updateProgress(++count, n);
             }
@@ -97,13 +97,13 @@ class SelectTask extends BaseTask<Boolean> {
             result = true;
         } catch (NoSuchAlgorithmException ex) {
             updateMessage("exception");
-            addMessage(Message.Level.ERROR, "No such algorithm: " + algorithm, getStackTrace(ex));
+            addMessage(Message.Level.ERROR, "No such algorithm: " + algorithm, ex);
         } catch (InterruptedException ex) {
             if (isCancelled()) {
                 updateMessage("cancelled");
             } else {
                 updateMessage("interrupted");
-                addMessage(Message.Level.ERROR, "Interrupted", getStackTrace(ex));
+                addMessage(Message.Level.ERROR, "Interrupted", ex);
             }
         }
         return result;

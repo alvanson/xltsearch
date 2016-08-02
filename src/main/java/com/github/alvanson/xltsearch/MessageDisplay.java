@@ -19,46 +19,55 @@ import javafx.beans.property.ListProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
-import javafx.geometry.Orientation;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 
 class MessageDisplay {
     private static final int SCENE_WIDTH = 640;
     private static final int SCENE_HEIGHT = 480;
 
+    @FXML private TableView<Message> table;
+    @FXML private TableColumn<Message,String> fromCol;
+    @FXML private TableColumn<Message,String> levelCol;
+    @FXML private TableColumn<Message,String> summaryCol;
+    @FXML private TextArea detailsField;
+
     private final Stage stage = new Stage();
     private final SimpleListProperty<Message> messages =
         new SimpleListProperty<>(FXCollections.observableList(new LinkedList<>()));
 
     MessageDisplay() {
-        initUI();
-    }
-
-    private void initUI() {
         stage.setTitle("Messages");
 
-        final SplitPane sp = new SplitPane();
-        sp.setOrientation(Orientation.VERTICAL);
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/message_display.fxml"));
+        fxmlLoader.setController(this);
+        try {
+            Scene scene = new Scene(fxmlLoader.load(), SCENE_WIDTH, SCENE_HEIGHT);
+            stage.setScene(scene);
+        } catch (Exception ex) {
+            DetailedAlert alert = new DetailedAlert(DetailedAlert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Exception while loading MessageDisplay");
+            alert.setDetailsText(Message.getStackTrace(ex));
+            alert.showAndWait();
+        }
+    }
 
-        final TableView<Message> table = new TableView<>();
-        final TableColumn<Message,String> fromCol = new TableColumn<>("From");
-        final TableColumn<Message,String> levelCol = new TableColumn<>("Level");
-        final TableColumn<Message,String> summaryCol = new TableColumn<>("Summary");
-        table.getColumns().addAll(fromCol, levelCol, summaryCol);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        final TextArea detailsField = new TextArea();
-        detailsField.setMaxHeight(Double.MAX_VALUE);
-        detailsField.setEditable(false);
-
-        sp.getItems().addAll(table, detailsField);
-        sp.setDividerPositions(2.0/3.0);
+    @FXML
+    private void initialize() {
+        // replaces CONSTRAINED_RESIZE_POLICY
+        summaryCol.prefWidthProperty().bind(
+            table.widthProperty()
+            .subtract(fromCol.widthProperty())
+            .subtract(levelCol.widthProperty())
+        );
 
         table.itemsProperty().bind(messages);
 
@@ -76,17 +85,16 @@ class MessageDisplay {
                 detailsField.setText("");
             }
         });
+    }
 
-        table.setOnKeyPressed((event) -> {
+    @FXML
+    private void deleteMessage(KeyEvent event) {
+        if (event.getCode() == KeyCode.DELETE) {
             Message msg = table.getSelectionModel().getSelectedItem();
-            if (msg != null && event.getCode() == KeyCode.DELETE) {
+            if (msg != null) {
                 messages.get().remove(msg);
             }
-        });
-
-        Scene scene = new Scene(sp, SCENE_WIDTH, SCENE_HEIGHT);
-        scene.getStylesheets().add("stylesheet.css");
-        stage.setScene(scene);
+        }
     }
 
     void show() {

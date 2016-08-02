@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/* Copyright 2016 Evan A. Thompson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<?import java.lang.Double?>
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane fx:id="border" xmlns:fx="http://javafx.com/fxml">
+    <stylesheets><URL value="@stylesheet.css" /></stylesheets>
+    <left>
+        <VBox spacing="10">
+            <padding><Insets topRightBottomLeft="10" /></padding>
+            <HBox spacing="10">
+                <TextField fx:id="newField" />
+                <Button text="New" onAction="#newConfig" HBox.hgrow="ALWAYS" />
+            </HBox>
+            <ListView fx:id="listView" VBox.vgrow="ALWAYS" />
+        </VBox>
+    </left>
+    <bottom>
+        <fx:define>
+            <Double fx:id="BUTTON_WIDTH" fx:value="120" />
+        </fx:define>
+        <HBox spacing="10">
+            <minHeight><HBox fx:constant="USE_PREF_SIZE" /></minHeight>
+            <padding><Insets topRightBottomLeft="10" /></padding>
+            <Button text="About" prefWidth="$BUTTON_WIDTH" onAction="#showAbout" />
+            <Region HBox.hgrow="ALWAYS" /><!-- spacer -->
+            <Button text="Load" prefWidth="$BUTTON_WIDTH" onAction="#loadConfig" />
+            <Button text="Cancel" prefWidth="$BUTTON_WIDTH" onAction="#hide" />
+        </HBox>
+    </bottom>
+</BorderPane>

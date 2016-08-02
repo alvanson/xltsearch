@@ -21,8 +21,6 @@ import org.apache.lucene.util.Version;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -362,12 +360,6 @@ class Catalog {
 
     private void addMessage(Message.Level level, String summary, String details) {
         messages.get().add(new Message(getClass().getSimpleName(), level, summary, details));
-    }
-
-    private final String getStackTrace(Throwable ex) {
-        StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
     }
 
     String getConfigName() {

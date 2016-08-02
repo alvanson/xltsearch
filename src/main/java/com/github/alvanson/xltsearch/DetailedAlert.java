@@ -14,13 +14,12 @@
  */
 package com.github.alvanson.xltsearch;
 
-import javafx.geometry.Pos;
+import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.GridPane;
 
 class DetailedAlert extends Alert {
     DetailedAlert(Alert.AlertType alertType) {
@@ -32,9 +31,7 @@ class DetailedAlert extends Alert {
     }
 
     void setDetailsText(String details) {
-        VBox content = new VBox();
-        content.setAlignment(Pos.BASELINE_LEFT);
-        content.setMaxWidth(Double.MAX_VALUE);
+        GridPane content = new GridPane();
         content.setMaxHeight(Double.MAX_VALUE);
 
         Label label = new Label("Details:");
@@ -43,9 +40,16 @@ class DetailedAlert extends Alert {
         textArea.setMaxWidth(Double.MAX_VALUE);
         textArea.setMaxHeight(Double.MAX_VALUE);
 
-        content.getChildren().addAll(label, textArea);
-        content.setVgrow(textArea, Priority.ALWAYS);
+        content.add(label, 0, 0);
+        content.add(textArea, 0, 1);
 
         this.getDialogPane().setExpandableContent(content);
+        // work around DialogPane expandable content resize bug
+        this.getDialogPane().expandedProperty().addListener((ov, oldValue, newValue) -> {
+            Platform.runLater(() -> {
+                this.getDialogPane().requestLayout();
+                this.getDialogPane().getScene().getWindow().sizeToScene();
+            });
+        });
     }
 }
