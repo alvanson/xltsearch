@@ -23,29 +23,21 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
-import javafx.geometry.Pos;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
-import javafx.scene.text.TextAlignment;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
@@ -56,10 +48,26 @@ public class App extends Application {
 
     private static final int SCENE_WIDTH = 640;
     private static final int SCENE_HEIGHT = 480;
-    private static final int BUTTON_WIDTH = 100;
 
+    @FXML private Label folderPathLabel;
+    @FXML private Label indexDetailsLabel;
+    @FXML private TextField queryField;
+    @FXML private Button searchButton;
+    @FXML private TextField limitField;
+    @FXML private Label searchMessageLabel;
+    @FXML private TableView<SearchResult> resultsTable;
+    @FXML private TableColumn<SearchResult,String> fileNameCol;
+    @FXML private TableColumn<SearchResult,String> titleCol;
+    @FXML private TableColumn<SearchResult,String> scoreCol;
+    @FXML private TextArea detailsField;
+    @FXML private Label indexMessageLabel;
+    @FXML private ProgressBar indexProgress;
+    @FXML private Button messagesButton;
+
+    private Stage stage;
+    private Configurator configurator;
+    private MessageDisplay messageDisplay;
     private PersistentProperties properties;
-
     private final ObjectProperty<Catalog> catalog = new SimpleObjectProperty<>();
 
     public static void main(String[] args) {
@@ -68,8 +76,22 @@ public class App extends Application {
 
     @Override
     public void start(final Stage stage) {
-        // draw UI
-        initUI(stage);
+        this.stage = stage;
+        // initialize UI
+        stage.setTitle("XLTSearch " + Config.XLT_VERSION);
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/app.fxml"));
+        fxmlLoader.setController(this);
+        try {
+            Scene scene = new Scene(fxmlLoader.load(), SCENE_WIDTH, SCENE_HEIGHT);
+            stage.setScene(scene);
+            stage.show();
+        } catch (Exception ex) {
+            DetailedAlert alert = new DetailedAlert(DetailedAlert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Exception while loading App");
+            alert.setDetailsText(Message.getStackTrace(ex));
+            alert.showAndWait();
+        }
         // load application properties
         properties = new PersistentProperties(
             new File(System.getProperty("user.home") + File.separator + APP_CONFIG_FILE),
@@ -106,141 +128,21 @@ public class App extends Application {
         catalog.get().loadConfig(lastConfig);
     }
 
-    private void initUI(final Stage stage) {
-        stage.setTitle("XLTSearch " + Config.XLT_VERSION);
+    @FXML
+    private void initialize() {
+        // replaces CONSTRAINED_RESIZE_POLICY
+        scoreCol.prefWidthProperty().bind(
+            resultsTable.widthProperty()
+            .subtract(fileNameCol.widthProperty())
+            .subtract(titleCol.widthProperty())
+        );
 
-        final BorderPane border = new BorderPane();
-
-        // TOP
-        final VBox topVBox = new VBox();
-
-        final VBox toolVBox = new VBox(5);
-        toolVBox.setPadding(new Insets(10));
-        toolVBox.getStyleClass().add("info-bar");
-
-        // folder line
-        final HBox folderHBox = new HBox(10);
-        folderHBox.setAlignment(Pos.BASELINE_LEFT);
-
-        final Label folderLabel = new Label("Folder:");
-        folderLabel.getStyleClass().addAll("info-bar", "caption");
-        folderLabel.setMinWidth(Label.USE_PREF_SIZE);
-        final Label folderPathLabel = new Label();
-        folderPathLabel.getStyleClass().add("info-bar");
-        folderPathLabel.setMaxWidth(Double.MAX_VALUE);
-        final Button folderButton = new Button("Open Folder");
-        folderButton.setPrefWidth(BUTTON_WIDTH);
-        folderButton.setMinWidth(Button.USE_PREF_SIZE);
-
-        folderHBox.getChildren().addAll(folderLabel, folderPathLabel, folderButton);
-        folderHBox.setHgrow(folderPathLabel, Priority.ALWAYS);
-
-        // index line
-        final HBox indexHBox = new HBox(10);
-        indexHBox.setAlignment(Pos.CENTER_LEFT);
-
-        final Label indexLabel = new Label("Index:");
-        indexLabel.getStyleClass().addAll("info-bar", "caption");
-        indexLabel.setMinWidth(Label.USE_PREF_SIZE);
-        final Label indexDetailsLabel = new Label();
-        indexDetailsLabel.getStyleClass().add("info-bar");
-        indexDetailsLabel.setMaxWidth(Double.MAX_VALUE);
-        final Button configureButton = new Button("Configure");
-        configureButton.setPrefWidth(BUTTON_WIDTH);
-        configureButton.setMinWidth(Button.USE_PREF_SIZE);
-
-        indexHBox.getChildren().addAll(indexLabel, indexDetailsLabel, configureButton);
-        indexHBox.setHgrow(indexDetailsLabel, Priority.ALWAYS);
-
-        toolVBox.getChildren().addAll(folderHBox, indexHBox);
-
-        // search bar
-        final GridPane searchGrid = new GridPane();
-        searchGrid.setAlignment(Pos.BASELINE_LEFT);
-        searchGrid.setHgap(20);
-        searchGrid.setVgap(10);
-        searchGrid.setPadding(new Insets(10));
-
-        // left half: query and button
-        final HBox leftSearchHBox = new HBox(10);
-        leftSearchHBox.setAlignment(Pos.BASELINE_LEFT);
-
-        final TextField queryField = new TextField();
-        final Button searchButton = new Button("Search");
-
-        leftSearchHBox.getChildren().addAll(queryField, searchButton);
-        leftSearchHBox.setHgrow(queryField, Priority.ALWAYS);
-
-        // right half: limit and status
-        final HBox rightSearchHBox = new HBox(10);
-        rightSearchHBox.setAlignment(Pos.BASELINE_LEFT);
-
-        final Label limitLabel = new Label("Limit:");
-        final TextField limitField = new TextField(Integer.toString(DEFAULT_LIMIT));
-        limitField.setPrefColumnCount(4);
-        final Label searchMessageLabel = new Label();
-        searchMessageLabel.setTextAlignment(TextAlignment.CENTER);
-
-        rightSearchHBox.getChildren().addAll(limitLabel, limitField, searchMessageLabel);
-        rightSearchHBox.setHgrow(searchMessageLabel, Priority.ALWAYS);
-
-        searchGrid.add(leftSearchHBox, 0, 0);
-        searchGrid.add(rightSearchHBox, 1, 0);
-
-        final ColumnConstraints cc = new ColumnConstraints();
-        cc.setPercentWidth(50); // 50/50 column constraints
-        searchGrid.getColumnConstraints().addAll(cc, cc);
-
-        topVBox.getChildren().addAll(toolVBox, searchGrid);
-
-        border.setTop(topVBox);
-
-        // CENTER
-        final SplitPane sp = new SplitPane();
-        sp.setOrientation(Orientation.VERTICAL);
-
-        final TableView<SearchResult> resultsTable = new TableView<>();
-        final TableColumn<SearchResult,String> fileNameCol = new TableColumn<>("Filename");
-        final TableColumn<SearchResult,String> titleCol = new TableColumn<>("Title");
-        final TableColumn<SearchResult,String> scoreCol = new TableColumn<>("Score");
-        resultsTable.getColumns().addAll(fileNameCol, titleCol, scoreCol);
-        resultsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        final TextArea detailsField = new TextArea();
-        detailsField.setMaxHeight(Double.MAX_VALUE);
-        detailsField.setEditable(false);
-
-        sp.getItems().addAll(resultsTable, detailsField);
-        sp.setDividerPositions(2.0/3.0);
-
-        border.setCenter(sp);
-
-        // BOTTOM
-        final HBox statusHBox = new HBox(10);
-        statusHBox.setAlignment(Pos.CENTER);
-        statusHBox.setPadding(new Insets(5, 10, 5, 10));
-
-        final Label statusLabel = new Label("Status:");
-        statusLabel.setMinWidth(Label.USE_PREF_SIZE);
-        statusLabel.getStyleClass().add("caption");
-        final Label indexMessageLabel = new Label("");
-        indexMessageLabel.setMaxWidth(Double.MAX_VALUE);
-        final ProgressBar indexProgress = new ProgressBar();
-        indexProgress.setPrefWidth(BUTTON_WIDTH);
-        indexProgress.setMinWidth(ProgressBar.USE_PREF_SIZE);
-        final Button messagesButton = new Button("Messages");
-        messagesButton.setPrefWidth(BUTTON_WIDTH);
-        messagesButton.setMinWidth(Button.USE_PREF_SIZE);
-
-        statusHBox.getChildren().addAll(
-            statusLabel, indexMessageLabel, indexProgress, messagesButton);
-        statusHBox.setHgrow(indexMessageLabel, Priority.ALWAYS);
-
-        border.setBottom(statusHBox);
+        searchButton.defaultButtonProperty().bind(searchButton.focusedProperty());
+        limitField.setText(Integer.toString(DEFAULT_LIMIT));
 
         // DIALOGS
-        final Configurator configurator = new Configurator();
-        final MessageDisplay messageDisplay = new MessageDisplay();
+        configurator = new Configurator();
+        messageDisplay = new MessageDisplay();
 
         // UI BINDINGS
         configurator.catalogProperty().bind(catalog);
@@ -253,12 +155,12 @@ public class App extends Application {
             indexMessageLabel.textProperty().bind(newValue.indexMessageProperty());
             indexProgress.progressProperty().bind(newValue.indexProgressProperty());
             // notify user of any existing (on load) messages
-            notify(newValue.messagesProperty().get(), messagesButton);
+            notify(newValue.messagesProperty().get());
             // user notification bindings
             newValue.messagesProperty().addListener(
                     (ListChangeListener.Change<? extends Message> c) -> {
                 while (c.next()) {
-                    notify(c.getAddedSubList(), messagesButton);
+                    notify(c.getAddedSubList());
                 }
             });
             messageDisplay.messagesProperty().bind(newValue.messagesProperty());
@@ -272,45 +174,6 @@ public class App extends Application {
             new ReadOnlyStringWrapper(String.format("%.0f", r.getValue().score*100)));
 
         // CALLBACKS
-        folderButton.setOnAction((event) -> {
-            if (catalog.get().isIndexing()) {
-                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-                alert.setTitle("Confirmation");
-                alert.setHeaderText("Indexing in progress");
-                alert.setContentText("Opening a new folder will cancel indexing. Continue?");
-                Optional<ButtonType> result = alert.showAndWait();
-                // escape on cancel/close
-                if (!result.isPresent() || result.get() != ButtonType.OK) {
-                    return;
-                }
-            }
-            DirectoryChooser directoryChooser = new DirectoryChooser();
-            File dir = directoryChooser.showDialog(stage);
-            if (dir != null) {
-                if (catalog.get() != null) {
-                    catalog.get().close();
-                }
-                catalog.set(new Catalog(dir));
-            }  // do nothing on cancel
-        });
-
-        configureButton.setOnAction((event) -> configurator.show());
-
-        queryField.setOnKeyPressed((event) -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                search(queryField, limitField, detailsField);
-            }
-        });
-
-        searchButton.defaultButtonProperty().bind(searchButton.focusedProperty());
-        searchButton.setOnAction((event) -> search(queryField, limitField, detailsField));
-
-        limitField.setOnKeyPressed((event) -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                search(queryField, limitField, detailsField);
-            }
-        });
-
         resultsTable.getSelectionModel().selectedItemProperty().addListener(
                 (o, oldValue, newValue) -> {
             if (newValue != null) {
@@ -336,20 +199,39 @@ public class App extends Application {
             });
             return row;
         });
+    }
 
-        messagesButton.setOnAction((event) -> {
-            messagesButton.getStyleClass().remove("alert");
-            messageDisplay.show();
-        });
+    @FXML
+    private void openFolder() {
+        if (catalog.get().isIndexing()) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Confirmation");
+            alert.setHeaderText("Indexing in progress");
+            alert.setContentText("Opening a new folder will cancel indexing. Continue?");
+            Optional<ButtonType> result = alert.showAndWait();
+            // escape on cancel/close
+            if (!result.isPresent() || result.get() != ButtonType.OK) {
+                return;
+            }
+        }
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        File dir = directoryChooser.showDialog(stage);
+        if (dir != null) {
+            if (catalog.get() != null) {
+                catalog.get().close();
+            }
+            catalog.set(new Catalog(dir));
+        }  // do nothing on cancel
+    }
 
-        Scene scene = new Scene(border, SCENE_WIDTH, SCENE_HEIGHT);
-        scene.getStylesheets().add("stylesheet.css");
-        stage.setScene(scene);
-        stage.show();
+    @FXML
+    private void configure() {
+        configurator.show();
     }
 
     // validate input and execute search
-    private void search(TextField queryField, TextField limitField, TextArea detailsField) {
+    @FXML
+    private void search() {
         // validate limit field
         String limitStr = limitField.getText();
         limitStr = limitStr.replaceAll("[^\\d]","");
@@ -364,8 +246,15 @@ public class App extends Application {
         catalog.get().search(queryField.getText(), limit);
     }
 
+    @FXML
+    private void searchOnEnter(KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER) {
+            search();
+        }
+    }
+
     // handle messages received on messagesProperty
-    private void notify(List<? extends Message> messages, Button button) {
+    private void notify(List<? extends Message> messages) {
         // immediately display errors
         for (Message msg : messages) {
             if (msg.level.compareTo(Message.Level.ERROR) >= 0) {
@@ -377,9 +266,15 @@ public class App extends Application {
             }
         }
         // restyle button to indicate that new messages are available
-        if (messages.size() > 0 && !button.getStyleClass().contains("alert")) {
-            button.getStyleClass().add("alert");
+        if (messages.size() > 0 && !messagesButton.getStyleClass().contains("alert")) {
+            messagesButton.getStyleClass().add("alert");
         }
+    }
+
+    @FXML
+    private void displayMessages() {
+        messagesButton.getStyleClass().remove("alert");
+        messageDisplay.show();
     }
 
     @Override

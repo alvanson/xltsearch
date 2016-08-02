@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/* Copyright 2016 Evan A. Thompson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<?import java.lang.Double?>
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml">
+    <stylesheets><URL value="@stylesheet.css" /></stylesheets>
+    <fx:define>
+        <Double fx:id="BUTTON_WIDTH" fx:value="100" />
+    </fx:define>
+    <top>
+        <VBox>
+            <VBox spacing="5" styleClass="info-bar">
+                <padding><Insets topRightBottomLeft="10" /></padding>
+                <HBox spacing="10" alignment="BASELINE_LEFT">
+                    <Label text="Folder:" styleClass="info-bar,caption">
+                        <minWidth><Label fx:constant="USE_PREF_SIZE" /></minWidth>
+                    </Label>
+                    <Label fx:id="folderPathLabel" maxWidth="Infinity" styleClass="info-bar"
+                        HBox.hgrow="ALWAYS" />
+                    <Button text="Open Folder" prefWidth="$BUTTON_WIDTH" onAction="#openFolder">
+                        <minWidth><Button fx:constant="USE_PREF_SIZE" /></minWidth>
+                    </Button>
+                </HBox>
+                <HBox spacing="10" alignment="BASELINE_LEFT">
+                    <Label text="Index:" styleClass="info-bar,caption">
+                        <minWidth><Label fx:constant="USE_PREF_SIZE" /></minWidth>
+                    </Label>
+                    <Label fx:id="indexDetailsLabel" maxWidth="Infinity" styleClass="info-bar"
+                        HBox.hgrow="ALWAYS" />
+                    <Button text="Configure" prefWidth="$BUTTON_WIDTH" onAction="#configure">
+                        <minWidth><Button fx:constant="USE_PREF_SIZE" /></minWidth>
+                    </Button>
+                </HBox>
+            </VBox>
+            <GridPane hgap="20" vgap="10" alignment="BASELINE_LEFT">
+                <padding><Insets topRightBottomLeft="10" /></padding>
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" />
+                    <ColumnConstraints percentWidth="50" />
+                </columnConstraints>
+                <HBox spacing="10" alignment="BASELINE_LEFT"
+                        GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <TextField fx:id="queryField" onKeyPressed="#searchOnEnter"
+                        HBox.hgrow="ALWAYS" />
+                    <Button fx:id="searchButton" text="Search" onAction="#search" />
+                </HBox>
+                <HBox spacing="10" alignment="BASELINE_LEFT"
+                        GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label text="Limit:" />
+                    <TextField fx:id="limitField" prefColumnCount="4"
+                        onKeyPressed="#searchOnEnter" />
+                    <Label fx:id="searchMessageLabel" textAlignment="CENTER" HBox.hgrow="ALWAYS" />
+                </HBox>
+            </GridPane>
+        </VBox>
+    </top>
+    <center>
+        <SplitPane orientation="VERTICAL" dividerPositions="0.67">
+            <TableView fx:id="resultsTable">
+                <columns>
+                    <TableColumn fx:id="fileNameCol" text="Filename" prefWidth="270" />
+                    <TableColumn fx:id="titleCol" text="Title" prefWidth="270" />
+                    <TableColumn fx:id="scoreCol" text="Score" />
+                </columns>
+            </TableView>
+            <TextArea fx:id="detailsField" editable="false" maxHeight="Infinity" />
+        </SplitPane>
+    </center>
+    <bottom>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <padding><Insets top="5" right="10" bottom="5" left="10" /></padding>
+            <Label text="Status:" styleClass="caption">
+                <minWidth><Label fx:constant="USE_PREF_SIZE" /></minWidth>
+            </Label>
+            <Label fx:id="indexMessageLabel" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+            <ProgressBar fx:id="indexProgress" prefWidth="$BUTTON_WIDTH">
+                <minWidth><ProgressBar fx:constant="USE_PREF_SIZE" /></minWidth>
+            </ProgressBar>
+            <Button fx:id="messagesButton" text="Messages" prefWidth="$BUTTON_WIDTH"
+                    onAction="#displayMessages">
+                <minWidth><Button fx:constant="USE_PREF_SIZE" /></minWidth>
+            </Button>
+        </HBox>
+    </bottom>
+</BorderPane>
