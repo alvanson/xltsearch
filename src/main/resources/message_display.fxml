@@ -16,12 +16,14 @@
  */
 -->
 <?import java.lang.Double?>
+<?import java.net.URL?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 
 <SplitPane orientation="VERTICAL" dividerPositions="0.67" xmlns:fx="http://javafx.com/fxml">
+    <stylesheets><URL value="@stylesheet.css" /></stylesheets>
     <TableView fx:id="table" onKeyPressed="#deleteMessage">
         <fx:define>
             <Double fx:id="COLUMN_WIDTH" fx:value="100" />

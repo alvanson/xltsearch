@@ -63,7 +63,6 @@ class Configurator {
         fxmlLoader.setController(this);
         try {
             Scene scene = new Scene(fxmlLoader.load(), SCENE_WIDTH, SCENE_HEIGHT);
-            scene.getStylesheets().add("stylesheet.css");
             stage.setScene(scene);
         } catch (Exception ex) {
             DetailedAlert alert = new DetailedAlert(DetailedAlert.AlertType.ERROR);
