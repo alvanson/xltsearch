@@ -71,6 +71,7 @@ class Catalog {
     Catalog(File root) {
         this.root = root;
         this.validConfig = false;
+        indexStart = -1;
         updateIndexDetails();
         updateIndexStatus();
         searchDetails.set("");

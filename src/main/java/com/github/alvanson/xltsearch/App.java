@@ -149,13 +149,16 @@ public class App extends Application {
         catalog.addListener((o, oldValue, newValue) -> {
             folderPathLabel.setText(newValue.getPath());
             // bind information controls to new catalog
+            indexDetailsLabel.textProperty().unbind();
             indexDetailsLabel.textProperty().bind(newValue.indexDetailsProperty());
+            searchMessageLabel.textProperty().unbind();
             searchMessageLabel.textProperty().bind(newValue.searchDetailsProperty());
+            resultsTable.itemsProperty().unbind();
             resultsTable.itemsProperty().bind(newValue.searchResultsProperty());
+            indexMessageLabel.textProperty().unbind();
             indexMessageLabel.textProperty().bind(newValue.indexMessageProperty());
+            indexProgress.progressProperty().unbind();
             indexProgress.progressProperty().bind(newValue.indexProgressProperty());
-            // notify user of any existing (on load) messages
-            notify(newValue.messagesProperty().get());
             // user notification bindings
             newValue.messagesProperty().addListener(
                     (ListChangeListener.Change<? extends Message> c) -> {
@@ -163,7 +166,10 @@ public class App extends Application {
                     notify(c.getAddedSubList());
                 }
             });
+            messageDisplay.messagesProperty().unbind();
             messageDisplay.messagesProperty().bind(newValue.messagesProperty());
+            // notify user of any existing (on load) messages
+            notify(newValue.messagesProperty().get());
         });
 
         fileNameCol.setCellValueFactory((r) ->
