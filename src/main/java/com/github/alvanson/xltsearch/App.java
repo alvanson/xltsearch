@@ -15,6 +15,7 @@
 package com.github.alvanson.xltsearch;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javafx.application.Application;
@@ -36,8 +37,11 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.TransferMode;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
@@ -198,9 +202,20 @@ public class App extends Application {
 
         resultsTable.setRowFactory((tv) -> {
             final TableRow<SearchResult> row = new TableRow<>();
+            // open file on double-click
             row.setOnMouseClicked((event) -> {
                 if (!row.isEmpty() && event.getClickCount() == 2) {
                     catalog.get().openFile(row.getItem().file);
+                }
+            });
+            // enable drag-and-drop
+            row.setOnDragDetected((event) -> {
+                if (!row.isEmpty()) {
+                    Dragboard db = row.startDragAndDrop(TransferMode.COPY, TransferMode.LINK);
+                    ClipboardContent content = new ClipboardContent();
+                    content.putFiles(Collections.singletonList(row.getItem().file));
+                    db.setContent(content);
+                    event.consume();
                 }
             });
             return row;
