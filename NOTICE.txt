@@ -1,7 +1,7 @@
 XLTSearch
 Copyright 2016 Evan A. Thompson
 
-This product includes Apache Lucene:
+This product bundles Apache Lucene 4.6.1:
 
     Apache Lucene
     Copyright 2013 The Apache Software Foundation
@@ -195,7 +195,7 @@ This product includes Apache Lucene:
     from and not be held liable to the user for any such damages as noted
     above as far as the program is concerned.
 
-This product includes Apache Tika:
+This product bundles Apache Tika 1.13:
 
     Apache Tika
     Copyright 2015 The Apache Software Foundation
@@ -214,3 +214,6 @@ This product includes Apache Tika:
     OpenCSV: Copyright 2005 Bytecode Pty Ltd. Licensed under the Apache License, Version 2.0
 
     IPTC Photo Metadata descriptions Copyright 2010 International Press Telecommunications Council.
+
+This product bundles SLF4J 1.7.7, which is available under the MIT license.
+For details, see http://www.slf4j.org/license.html.
