@@ -20,6 +20,7 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
@@ -37,6 +38,7 @@ class MessageDisplay {
     @FXML private TableColumn<Message,String> fromCol;
     @FXML private TableColumn<Message,String> summaryCol;
     @FXML private TextArea detailsField;
+    @FXML private ComboBox<Message.Level> logLevel;
 
     private final Stage stage = new Stage();
 
@@ -81,11 +83,16 @@ class MessageDisplay {
 
         table.getSelectionModel().selectedItemProperty().addListener((o, oldValue, newValue) -> {
             if (newValue != null) {
-                detailsField.setText(newValue.details);
+                detailsField.setText(newValue.summary + '\n' + newValue.details);
             } else {
                 detailsField.setText("");
             }
         });
+
+        logLevel.getItems().setAll(Message.Level.values());
+        logLevel.getSelectionModel().select(MessageLogger.logLevelProperty().get());
+        logLevel.getSelectionModel().selectedItemProperty().addListener(
+            (o, oldValue, newValue) -> MessageLogger.logLevelProperty().set(newValue));
     }
 
     @FXML
