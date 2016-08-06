@@ -68,7 +68,7 @@ class Configurator {
             DetailedAlert alert = new DetailedAlert(DetailedAlert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Exception while loading Configurator");
-            alert.setDetailsText(Message.getStackTrace(ex));
+            alert.setDetailsText(MessageLogger.getStackTrace(ex));
             alert.showAndWait();
         }
     }

@@ -93,21 +93,20 @@ public class App extends Application {
             DetailedAlert alert = new DetailedAlert(DetailedAlert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Exception while loading App");
-            alert.setDetailsText(Message.getStackTrace(ex));
+            alert.setDetailsText(MessageLogger.getStackTrace(ex));
             alert.showAndWait();
         }
+        // error notification
+        MessageLogger.messagesProperty().addListener(
+                (ListChangeListener.Change<? extends Message> c) -> {
+            while (c.next()) {
+                notify(c.getAddedSubList());
+            }
+        });
         // load application properties
         properties = new PersistentProperties(
             new File(System.getProperty("user.home") + File.separator + APP_CONFIG_FILE),
             APP_CONFIG_COMMENT, null);
-        // alert user if `properties` is not persistent
-        if (!properties.isPersistent()) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Unable to persist application properties");
-            alert.setContentText("Application settings will not be saved.");
-            alert.showAndWait();
-        }
         // open last folder with last config
         String lastFolder = properties.getProperty("last.folder");
         String lastConfig = properties.getProperty("last.config");  // ok if null
@@ -163,17 +162,6 @@ public class App extends Application {
             indexMessageLabel.textProperty().bind(newValue.indexMessageProperty());
             indexProgress.progressProperty().unbind();
             indexProgress.progressProperty().bind(newValue.indexProgressProperty());
-            // user notification bindings
-            newValue.messagesProperty().addListener(
-                    (ListChangeListener.Change<? extends Message> c) -> {
-                while (c.next()) {
-                    notify(c.getAddedSubList());
-                }
-            });
-            messageDisplay.messagesProperty().unbind();
-            messageDisplay.messagesProperty().bind(newValue.messagesProperty());
-            // notify user of any existing (on load) messages
-            notify(newValue.messagesProperty().get());
         });
 
         fileNameCol.setCellValueFactory((r) ->
@@ -274,7 +262,7 @@ public class App extends Application {
         }
     }
 
-    // handle messages received on messagesProperty
+    // handle messages received from MessageLogger
     private void notify(List<? extends Message> messages) {
         // immediately display errors
         for (Message msg : messages) {
@@ -283,7 +271,7 @@ public class App extends Application {
                 alert.setTitle("Error");
                 alert.setHeaderText(msg.summary);
                 alert.setDetailsText(msg.details);
-                alert.showAndWait();
+                alert.show();   // showAndWait() causes repeats and race conditions
             }
         }
         // restyle button to indicate that new messages are available

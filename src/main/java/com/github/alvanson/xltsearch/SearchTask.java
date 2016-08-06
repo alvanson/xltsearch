@@ -25,16 +25,17 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import javafx.concurrent.Task;
 
-class SearchTask extends BaseTask<List<SearchResult>> {
-    private final static String CLASS_NAME = "Search";
-
+class SearchTask extends Task<List<SearchResult>> {
     private final File root;
     private final Version version;
     private final Analyzer analyzer;
@@ -42,6 +43,8 @@ class SearchTask extends BaseTask<List<SearchResult>> {
     private final IndexFields indexFields;
     private final String qstr;
     private final int limit;
+
+    private final Logger logger = LoggerFactory.getLogger(SearchTask.class);
 
     SearchTask(File root, Version version, Analyzer analyzer, Directory directory,
             IndexFields indexFields, String qstr, int limit) {
@@ -88,17 +91,17 @@ class SearchTask extends BaseTask<List<SearchResult>> {
             updateMessage(hits.length + " results");
         } catch (IOException ex) {
             updateMessage("I/O exception");
-            addMessage(Message.Level.ERROR, "I/O exception while reading index", ex);
+            logger.error("I/O exception while reading index", ex);
         } catch (ParseException ex) {
             updateMessage("Parse error");
-            addMessage(Message.Level.WARN, "Parse exception while parsing '" + qstr + "'", ex);
+            logger.warn("Parse exception while parsing '{}'", qstr, ex);
         }
         // close ireader
         if (ireader != null) {
             try {
                 ireader.close();
             } catch (IOException ex) {
-                addMessage(Message.Level.WARN, "I/O exception while closing index reader", ex);
+                logger.warn("I/O exception while closing index reader", ex);
             }
         }
         return results;

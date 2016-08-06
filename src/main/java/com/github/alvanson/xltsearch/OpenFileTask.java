@@ -14,14 +14,20 @@
  */
 package com.github.alvanson.xltsearch;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import javafx.concurrent.Task;
 
 // desktop.open() must be executed in a separate task
-class OpenFileTask extends BaseTask<Void> {
+class OpenFileTask extends Task<Void> {
     private final Desktop desktop = Desktop.getDesktop();
     private final File file;
+
+    private final Logger logger = LoggerFactory.getLogger(OpenFileTask.class);
 
     OpenFileTask(File file) {
         this.file = file;
@@ -32,7 +38,7 @@ class OpenFileTask extends BaseTask<Void> {
         try {
             desktop.open(file);
         } catch (IOException ex) {
-            addMessage(Message.Level.ERROR, "Could not open file " + file.getName(), ex);
+            logger.error("Could not open file {}", file.getName(), ex);
         }
         return null;
     }

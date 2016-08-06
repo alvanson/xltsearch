@@ -1,5 +1,6 @@
 /**
  * Copyright (c) 2004-2011 QOS.ch
+ * Copyright (c) 2016 Evan A. Thompson
  * All rights reserved.
  *
  * Permission is hereby granted, free  of charge, to any person obtaining
@@ -27,6 +28,8 @@ package org.slf4j.impl;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LoggerFactoryBinder;
+
+import com.github.alvanson.xltsearch.MessageLoggerFactory;
 
 /**
  * The binding of {@link LoggerFactory} class with an actual instance of
@@ -60,7 +63,7 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
   // to avoid constant folding by the compiler, this field must *not* be final
   public static String REQUESTED_API_VERSION = "1.6.99";  // !final
 
-  private static final String loggerFactoryClassStr = SimpleLoggerFactory.class.getName();
+  private static final String loggerFactoryClassStr = MessageLoggerFactory.class.getName();
 
   /**
    * The ILoggerFactory instance returned by the {@link #getLoggerFactory}
@@ -69,7 +72,7 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
   private final ILoggerFactory loggerFactory;
 
   private StaticLoggerBinder() {
-    loggerFactory = new SimpleLoggerFactory();
+    loggerFactory = new MessageLoggerFactory();
   }
 
   public ILoggerFactory getLoggerFactory() {

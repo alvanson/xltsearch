@@ -17,6 +17,8 @@ package com.github.alvanson.xltsearch;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,7 +41,7 @@ import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
+import javafx.concurrent.Task;
 
 class Catalog {
     private static final String CATALOG_DIR = ".xltstore";
@@ -65,8 +67,8 @@ class Catalog {
     private final ReadOnlyStringWrapper searchDetails = new ReadOnlyStringWrapper();
     private final ReadOnlyListWrapper<SearchResult> searchResults =
         new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private final ReadOnlyListWrapper<Message> messages =
-        new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+
+    private final Logger logger = LoggerFactory.getLogger(Catalog.class);
 
     Catalog(File root) {
         this.root = root;
@@ -101,23 +103,7 @@ class Catalog {
         if (!configDir.isDirectory()) {
             configDir.mkdirs();
         }
-        Config result = new Config(configDir, name);
-        // check for persistence
-        if (!result.isPersistent()) {
-            addMessage(Message.Level.ERROR,
-                "I/O exception while opening configuration",
-                "Unable to persist configuration. Settings will not be saved.");
-        }
-        // Catalog is responsible for listening to all objects created by it
-        result.messagesProperty().addListener(
-                (ListChangeListener.Change<? extends Message> c) -> {
-            while (c.next()) {
-                for (Message msg : c.getAddedSubList()) {
-                    messages.get().add(msg);
-                }
-            }
-        });
-        return result;
+        return new Config(configDir, name);
     }
 
     void loadConfig(String name) {
@@ -139,12 +125,8 @@ class Catalog {
                                 config.get("directory.type");
                             if (directoryFactory != null) {
                                 directory = directoryFactory.apply(config.getIndexDir());
-                                // functional interface returns null instead of IOException
                                 if (directory != null) {
                                     validConfig = true;
-                                } else {
-                                    addMessage(Message.Level.ERROR,
-                                        "I/O exception while opening index", "");
                                 }
                             }
                         }
@@ -184,7 +166,7 @@ class Catalog {
 
     void updateIndex() {
         if (!validConfig) {
-            addMessage(Message.Level.ERROR, "Invalid configuration", "Cannot update index.");
+            logger.error("Cannot update index: invalid configuration");
             return;
         }
         cancelAllTasks();
@@ -202,8 +184,7 @@ class Catalog {
             try (FileInputStream in = new FileInputStream(hashSumsFile)) {
                 hashSums.load(in);
             } catch (IOException ex) {
-                addMessage(Message.Level.ERROR, "I/O exception while loading hash sums",
-                    "Unable to load file checksums. Entire index will be rebuilt.");
+                logger.error("I/O exception while loading hash sums", ex);
             }
         }
         // convert Properties to proper Map<String,String>
@@ -232,8 +213,7 @@ class Catalog {
                     newHashSums.store(out, HASH_SUMS_COMMENT);
                     config.setLastUpdated(indexStart);  // everything worked
                 } catch (IOException ex) {
-                    addMessage(Message.Level.ERROR, "I/O exception while saving hash sums",
-                        "Unable to save file checksums.");
+                    logger.error("I/O exception while saving hash sums", ex);
                 }
             }   // else/catch: index already marked INDEX_UPDATE_FAILED
             indexStart = -1;
@@ -287,7 +267,7 @@ class Catalog {
 
     void search(String query, int limit) {
         if (!validConfig) {
-            addMessage(Message.Level.ERROR, "Invalid configuration", "Cannot perform search.");
+            logger.error("Cannot perform search: invalid configuration");
             return;
         }
         // clear existing search results
@@ -313,15 +293,7 @@ class Catalog {
         startTask(new OpenFileTask(file));
     }
 
-    private <V> void startTask(BaseTask<V> task) {
-        // add new messages to Catalog messages list
-        task.messagesProperty().addListener((ListChangeListener.Change<? extends Message> c) -> {
-            while (c.next()) {
-                for (Message msg : c.getAddedSubList()) {
-                    messages.get().add(msg);
-                }
-            }
-        });
+    private <V> void startTask(Task<V> task) {
         // start task
         Thread thread = new Thread(task);
         thread.setDaemon(true);
@@ -359,10 +331,6 @@ class Catalog {
         directory = null;
     }
 
-    private void addMessage(Message.Level level, String summary, String details) {
-        messages.get().add(new Message(getClass().getSimpleName(), level, summary, details));
-    }
-
     String getConfigName() {
         if (config != null) {
             return config.getName();
@@ -390,8 +358,5 @@ class Catalog {
     }
     ReadOnlyListProperty<SearchResult> searchResultsProperty() {
         return searchResults.getReadOnlyProperty();
-    }
-    ReadOnlyListProperty<Message> messagesProperty() {
-        return messages.getReadOnlyProperty();
     }
 }

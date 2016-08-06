@@ -14,11 +14,7 @@
  */
 package com.github.alvanson.xltsearch;
 
-import java.util.LinkedList;
-import javafx.beans.property.ListProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.beans.property.SimpleListProperty;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -40,8 +36,6 @@ class MessageDisplay {
     @FXML private TextArea detailsField;
 
     private final Stage stage = new Stage();
-    private final SimpleListProperty<Message> messages =
-        new SimpleListProperty<>(FXCollections.observableList(new LinkedList<>()));
 
     MessageDisplay() {
         stage.setTitle("Messages");
@@ -55,7 +49,7 @@ class MessageDisplay {
             DetailedAlert alert = new DetailedAlert(DetailedAlert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Exception while loading MessageDisplay");
-            alert.setDetailsText(Message.getStackTrace(ex));
+            alert.setDetailsText(MessageLogger.getStackTrace(ex));
             alert.showAndWait();
         }
     }
@@ -69,7 +63,7 @@ class MessageDisplay {
             .subtract(levelCol.widthProperty())
         );
 
-        table.itemsProperty().bind(messages);
+        table.itemsProperty().bind(MessageLogger.messagesProperty());
 
         fromCol.setCellValueFactory((r) ->
             new ReadOnlyStringWrapper(r.getValue().from));
@@ -92,7 +86,7 @@ class MessageDisplay {
         if (event.getCode() == KeyCode.DELETE) {
             Message msg = table.getSelectionModel().getSelectedItem();
             if (msg != null) {
-                messages.get().remove(msg);
+                MessageLogger.messagesProperty().get().remove(msg);
             }
         }
     }
@@ -100,6 +94,4 @@ class MessageDisplay {
     void show() {
         stage.show();
     }
-
-    ListProperty<Message> messagesProperty() { return messages; }
 }

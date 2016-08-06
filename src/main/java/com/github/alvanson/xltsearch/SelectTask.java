@@ -14,6 +14,9 @@
  */
 package com.github.alvanson.xltsearch;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -25,16 +28,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import javax.xml.bind.DatatypeConverter;
+import javafx.concurrent.Task;
 
-class SelectTask extends BaseTask<Boolean> {
-    private static final String CLASS_NAME = "Select";
-
+class SelectTask extends Task<Boolean> {
     private final File root;
     private final List<String> files;
     private final String algorithm;
     private final Map<String,String> hashSums;
     private final BlockingQueue<Docket> outQueue;
     private final int n;
+
+    private final Logger logger = LoggerFactory.getLogger(SelectTask.class);
 
     SelectTask(File root, List<String> files, String algorithm, Map<String,String> hashSums,
             BlockingQueue<Docket> outQueue, int n) {
@@ -78,8 +82,7 @@ class SelectTask extends BaseTask<Boolean> {
                         outQueue.put(new Docket(relPath, hashSum, Docket.Status.PASS));
                     }
                 } catch (IOException ex) {
-                    addMessage(Message.Level.WARN,
-                        "I/O exception while processing " + relPath, ex);
+                    logger.warn("I/O exception while processing {}", relPath, ex);
                 }
                 updateProgress(++count, n);
             }
@@ -97,13 +100,13 @@ class SelectTask extends BaseTask<Boolean> {
             result = true;
         } catch (NoSuchAlgorithmException ex) {
             updateMessage("exception");
-            addMessage(Message.Level.ERROR, "No such algorithm: " + algorithm, ex);
+            logger.error("No such algorithm: {}", algorithm, ex);
         } catch (InterruptedException ex) {
             if (isCancelled()) {
                 updateMessage("cancelled");
             } else {
                 updateMessage("interrupted");
-                addMessage(Message.Level.ERROR, "Interrupted", ex);
+                logger.error("Interrupted", ex);
             }
         }
         return result;
