@@ -14,6 +14,8 @@
  */
 package com.github.alvanson.xltsearch;
 
+import java.text.DateFormat;
+import java.util.Date;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -30,8 +32,9 @@ class MessageDisplay {
     private static final int SCENE_HEIGHT = 480;
 
     @FXML private TableView<Message> table;
-    @FXML private TableColumn<Message,String> fromCol;
+    @FXML private TableColumn<Message,String> timeCol;
     @FXML private TableColumn<Message,String> levelCol;
+    @FXML private TableColumn<Message,String> fromCol;
     @FXML private TableColumn<Message,String> summaryCol;
     @FXML private TextArea detailsField;
 
@@ -59,16 +62,20 @@ class MessageDisplay {
         // replaces CONSTRAINED_RESIZE_POLICY
         summaryCol.prefWidthProperty().bind(
             table.widthProperty()
-            .subtract(fromCol.widthProperty())
+            .subtract(timeCol.widthProperty())
             .subtract(levelCol.widthProperty())
+            .subtract(fromCol.widthProperty())
         );
 
         table.itemsProperty().bind(MessageLogger.messagesProperty());
 
-        fromCol.setCellValueFactory((r) ->
-            new ReadOnlyStringWrapper(r.getValue().from));
+        final DateFormat df = DateFormat.getTimeInstance();
+        timeCol.setCellValueFactory((r) ->
+            new ReadOnlyStringWrapper(df.format(new Date(r.getValue().timestamp))));
         levelCol.setCellValueFactory((r) ->
             new ReadOnlyStringWrapper(r.getValue().level.toString()));
+        fromCol.setCellValueFactory((r) ->
+            new ReadOnlyStringWrapper(r.getValue().from));
         summaryCol.setCellValueFactory((r) ->
             new ReadOnlyStringWrapper(r.getValue().summary));
 

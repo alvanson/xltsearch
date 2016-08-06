@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 -->
-<?import java.lang.Double?>
 <?import java.net.URL?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TextArea?>
@@ -25,12 +24,10 @@
 <SplitPane orientation="VERTICAL" dividerPositions="0.67" xmlns:fx="http://javafx.com/fxml">
     <stylesheets><URL value="@stylesheet.css" /></stylesheets>
     <TableView fx:id="table" onKeyPressed="#deleteMessage">
-        <fx:define>
-            <Double fx:id="COLUMN_WIDTH" fx:value="100" />
-        </fx:define>
         <columns>
-            <TableColumn fx:id="fromCol" text="From" prefWidth="$COLUMN_WIDTH" />
-            <TableColumn fx:id="levelCol" text="Level" prefWidth="$COLUMN_WIDTH" />
+            <TableColumn fx:id="timeCol" text="Time" prefWidth="100" />
+            <TableColumn fx:id="levelCol" text="Level" prefWidth="80" />
+            <TableColumn fx:id="fromCol" text="From" prefWidth="120" />
             <TableColumn fx:id="summaryCol" text="Summary" />
         </columns>
     </TableView>

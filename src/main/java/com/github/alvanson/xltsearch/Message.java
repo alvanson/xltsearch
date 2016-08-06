@@ -19,14 +19,16 @@ class Message {
         TRACE, DEBUG, INFO, WARN, ERROR
     }
 
-    final String from;
+    final long timestamp;
     final Level level;
+    final String from;
     final String summary;
     final String details;
 
-    Message(String from, Level level, String summary, String details) {
-        this.from = from;
+    Message(long timestamp, Level level, String from, String summary, String details) {
+        this.timestamp = timestamp;
         this.level = level;
+        this.from = from;
         this.summary = summary;
         this.details = details;
     }

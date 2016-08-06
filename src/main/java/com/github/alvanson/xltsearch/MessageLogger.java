@@ -39,12 +39,14 @@ class MessageLogger extends MarkerIgnoringBase {
     }
 
     private void add(Message.Level level, String msg) {
+        final long now = System.currentTimeMillis();
         Platform.runLater(() ->
-            messages.get().add(new Message(name, level, msg, "")));
+            messages.get().add(new Message(now, level, name, msg, "")));
     }
     private void add(Message.Level level, String msg, Throwable t) {
+        final long now = System.currentTimeMillis();
         Platform.runLater(() ->
-            messages.get().add(new Message(name, level, msg, getStackTrace(t))));
+            messages.get().add(new Message(now, level, name, msg, getStackTrace(t))));
     }
     private void add(Message.Level level, FormattingTuple tp) {
         if (tp.getThrowable() == null) {
