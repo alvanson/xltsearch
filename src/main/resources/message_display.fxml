@@ -27,9 +27,9 @@
 <?import javafx.scene.layout.HBox?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml">
+    <stylesheets><URL value="@stylesheet.css" /></stylesheets>
     <center>
         <SplitPane orientation="VERTICAL" dividerPositions="0.67">
-            <stylesheets><URL value="@stylesheet.css" /></stylesheets>
             <TableView fx:id="table" onKeyPressed="#deleteMessage">
                 <columns>
                     <TableColumn fx:id="timeCol" text="Time" prefWidth="100" />
