@@ -25,19 +25,24 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.apache.tika.metadata.Property;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import javafx.concurrent.Task;
 
-class IndexTask extends BaseTask<Map<String,String>> {
+class IndexTask extends Task<Map<String,String>> {
     private final BlockingQueue<Docket> inQueue;
     private final Version version;
     private final Analyzer analyzer;
     private final Directory directory;
     private final IndexFields indexFields;
     private final int n;
+
+    private final Logger logger = LoggerFactory.getLogger(IndexTask.class);
 
     IndexTask(BlockingQueue<Docket> inQueue, Version version, Analyzer analyzer,
             Directory directory, IndexFields indexFields, int n) {
@@ -91,9 +96,8 @@ class IndexTask extends BaseTask<Map<String,String>> {
                         iwriter.deleteDocuments(new Term(indexFields.path, docket.relPath));
                         break;
                     default:
-                        addMessage(Message.Level.ERROR,
-                            "Unexpected docket state while processing " + docket.relPath,
-                            docket.status.toString());
+                        logger.error("Unexpected docket state while processing {}: {}",
+                            docket.relPath, docket.status.toString());
                         cancel(true);   // cancel task
                 }
                 updateProgress(++count, n);
@@ -103,13 +107,13 @@ class IndexTask extends BaseTask<Map<String,String>> {
             updateProgress(n, n);
         } catch (IOException ex) {
             updateMessage("I/O exception");
-            addMessage(Message.Level.ERROR, "I/O exception while writing to index", ex);
+            logger.error("I/O exception while writing to index", ex);
         } catch (InterruptedException ex) {
             if (isCancelled()) {
                 updateMessage("cancelled");
             } else {
                 updateMessage("interrupted");
-                addMessage(Message.Level.ERROR, "Interrupted", ex);
+                logger.error("Interrupted", ex);
             }
         }
         // close iwriter
@@ -117,7 +121,7 @@ class IndexTask extends BaseTask<Map<String,String>> {
             try {
                 iwriter.close();
             } catch (IOException ex) {
-                addMessage(Message.Level.WARN, "I/O exception while closing index writer", ex);
+                logger.warn("I/O exception while closing index writer", ex);
             }
         }
         return hashSums;

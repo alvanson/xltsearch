@@ -14,6 +14,9 @@
  */
 package com.github.alvanson.xltsearch;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -26,6 +29,8 @@ public class PersistentProperties extends Properties {
     private String comments;
     private boolean persistent;  // able to persist changes to `file`
 
+    private final Logger logger = LoggerFactory.getLogger(PersistentProperties.class);
+
     public PersistentProperties(File file, String comments, InputStream defaults) {
         this.file = file;
         this.comments = comments;
@@ -34,7 +39,7 @@ public class PersistentProperties extends Properties {
             try (InputStream in = defaults) {
                 load(defaults);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                logger.error("I/O exception while loading defaults", ex);
             }
         }
         // load properties
@@ -44,17 +49,13 @@ public class PersistentProperties extends Properties {
                 load(in);
             } catch (IOException ex) {
                 this.persistent = false;
-                ex.printStackTrace();
+                logger.error("I/O exception while opening {}", file.getName(), ex);
             }
         }
         // (attempt to) save properties
         if (this.persistent) {
             persist();
         }
-    }
-
-    public boolean isPersistent() {
-        return persistent;
     }
 
     // attempts regardless of `persistent`
@@ -64,7 +65,7 @@ public class PersistentProperties extends Properties {
             persistent = true;  // sucessfully stored
         } catch (IOException ex) {
             persistent = false;
-            ex.printStackTrace();
+            logger.error("I/O exception while saving {}", file.getName(), ex);
         }
     }
 

@@ -22,6 +22,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,14 +35,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javafx.beans.property.ReadOnlyListProperty;
-import javafx.beans.property.ReadOnlyListWrapper;
-import javafx.collections.FXCollections;
 
 class Config {
     public static final String XLT_VERSION = "0.0.2-SNAPSHOT";
@@ -75,8 +73,13 @@ class Config {
     private static final Map<String,Function<File,Directory>> DIRECTORY_TYPE =
         Collections.unmodifiableMap(new LinkedHashMap<String,Function<File,Directory>>() {{
             put("FS", (f) -> {
-                try { return FSDirectory.open(f); }
-                catch (IOException ex) { ex.printStackTrace(); return null; }
+                Logger logger = LoggerFactory.getLogger(Config.class);
+                try {
+                    return FSDirectory.open(f);
+                } catch (IOException ex) {
+                    logger.error("I/O exception while opening index", f.getName(), ex);
+                    return null;
+                }
             });
             put("RAM", (f) -> new RAMDirectory());
         }});
@@ -102,8 +105,7 @@ class Config {
     private final String name;
     private final PersistentProperties properties;
 
-    private final ReadOnlyListWrapper<Message> messages =
-        new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final Logger logger = LoggerFactory.getLogger(Config.class);
 
     Config(File configDir, String name) {
         this.configDir = configDir;
@@ -126,7 +128,7 @@ class Config {
         if (PROPERTY_MAP.containsKey(propertyName)) {
             options = PROPERTY_MAP.get(propertyName).keySet();
         } else {
-            addMessage(Message.Level.ERROR, "Unrecognized property name", propertyName);
+            logger.error("Unrecognized property name {}", propertyName);
         }
         return options;
     }
@@ -157,8 +159,7 @@ class Config {
             try {
                 lastUpdated = Long.parseLong(lastUpdatedStr);
             } catch (NumberFormatException ex) {
-                addMessage(Message.Level.ERROR,
-                    "Unable to determine time of last update", lastUpdatedStr);
+                logger.error("Unable to determine time of last update", ex);
                 lastUpdated = INDEX_INVALIDATED;
                 invalidateIndex();
             }
@@ -174,14 +175,13 @@ class Config {
             if (option != null) {
                 t = (T) PROPERTY_MAP.get(propertyName).get(option);
                 if (t == null) {
-                    addMessage(Message.Level.ERROR,
-                        "Unrecognized option for " + propertyName, option);
+                    logger.error("Unrecognized option for {}: {}", propertyName, option);
                 }
             } else {
-                addMessage(Message.Level.ERROR, "No default for property", propertyName);
+                logger.error("No default for property {}", propertyName);
             }
         } else {
-            addMessage(Message.Level.ERROR, "Unrecognized property name", propertyName);
+            logger.error("Unrecognized property name {}", propertyName);
         }
         return t;
     }
@@ -218,7 +218,7 @@ class Config {
             Files.deleteIfExists(getHashSumsFile().toPath());
             set("last.updated", Long.toString(INDEX_NEVER_CREATED));
         } catch (IOException ex) {
-            addMessage(Message.Level.ERROR, "Could not clear index", ex);
+            logger.error("Could not clear index", ex);
         }
     }
 
@@ -226,7 +226,7 @@ class Config {
         try {
             deltree(configDir);
         } catch (IOException ex) {
-            addMessage(Message.Level.ERROR, "Could not delete configuration", ex);
+            logger.error("Could not delete configuration", ex);
         }
         // CAUTION! Behaviour of this object after delete() is undefined!
     }
@@ -251,15 +251,5 @@ class Config {
         }
     }
 
-    private void addMessage(Message.Level level, String title, String details) {
-        messages.get().add(new Message(getClass().getSimpleName(), level, title, details));
-    }
-
-    private void addMessage(Message.Level level, String title, Throwable ex) {
-        messages.get().add(new Message(getClass().getSimpleName(), level, title, ex));
-    }
-
     String getName() { return name; }
-    boolean isPersistent() { return properties.isPersistent(); }
-    ReadOnlyListProperty<Message> messagesProperty() { return messages.getReadOnlyProperty(); }
 }

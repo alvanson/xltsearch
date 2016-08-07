@@ -14,14 +14,13 @@
  */
 package com.github.alvanson.xltsearch;
 
-import java.util.LinkedList;
-import javafx.beans.property.ListProperty;
+import java.text.DateFormat;
+import java.util.Date;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.beans.property.SimpleListProperty;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
@@ -34,14 +33,14 @@ class MessageDisplay {
     private static final int SCENE_HEIGHT = 480;
 
     @FXML private TableView<Message> table;
-    @FXML private TableColumn<Message,String> fromCol;
+    @FXML private TableColumn<Message,String> timeCol;
     @FXML private TableColumn<Message,String> levelCol;
+    @FXML private TableColumn<Message,String> fromCol;
     @FXML private TableColumn<Message,String> summaryCol;
     @FXML private TextArea detailsField;
+    @FXML private ComboBox<Message.Level> logLevel;
 
     private final Stage stage = new Stage();
-    private final SimpleListProperty<Message> messages =
-        new SimpleListProperty<>(FXCollections.observableList(new LinkedList<>()));
 
     MessageDisplay() {
         stage.setTitle("Messages");
@@ -55,7 +54,7 @@ class MessageDisplay {
             DetailedAlert alert = new DetailedAlert(DetailedAlert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Exception while loading MessageDisplay");
-            alert.setDetailsText(Message.getStackTrace(ex));
+            alert.setDetailsText(MessageLogger.getStackTrace(ex));
             alert.showAndWait();
         }
     }
@@ -65,26 +64,35 @@ class MessageDisplay {
         // replaces CONSTRAINED_RESIZE_POLICY
         summaryCol.prefWidthProperty().bind(
             table.widthProperty()
-            .subtract(fromCol.widthProperty())
+            .subtract(timeCol.widthProperty())
             .subtract(levelCol.widthProperty())
+            .subtract(fromCol.widthProperty())
         );
 
-        table.itemsProperty().bind(messages);
+        table.itemsProperty().bind(MessageLogger.messagesProperty());
 
-        fromCol.setCellValueFactory((r) ->
-            new ReadOnlyStringWrapper(r.getValue().from));
+        final DateFormat df = DateFormat.getTimeInstance();
+        timeCol.setCellValueFactory((r) ->
+            new ReadOnlyStringWrapper(df.format(new Date(r.getValue().timestamp))));
         levelCol.setCellValueFactory((r) ->
             new ReadOnlyStringWrapper(r.getValue().level.toString()));
+        fromCol.setCellValueFactory((r) ->
+            new ReadOnlyStringWrapper(r.getValue().from));
         summaryCol.setCellValueFactory((r) ->
             new ReadOnlyStringWrapper(r.getValue().summary));
 
         table.getSelectionModel().selectedItemProperty().addListener((o, oldValue, newValue) -> {
             if (newValue != null) {
-                detailsField.setText(newValue.details);
+                detailsField.setText(newValue.summary + '\n' + newValue.details);
             } else {
                 detailsField.setText("");
             }
         });
+
+        logLevel.getItems().setAll(Message.Level.values());
+        logLevel.getSelectionModel().select(MessageLogger.logLevelProperty().get());
+        logLevel.getSelectionModel().selectedItemProperty().addListener(
+            (o, oldValue, newValue) -> MessageLogger.logLevelProperty().set(newValue));
     }
 
     @FXML
@@ -92,7 +100,7 @@ class MessageDisplay {
         if (event.getCode() == KeyCode.DELETE) {
             Message msg = table.getSelectionModel().getSelectedItem();
             if (msg != null) {
-                messages.get().remove(msg);
+                MessageLogger.messagesProperty().get().remove(msg);
             }
         }
     }
@@ -100,6 +108,4 @@ class MessageDisplay {
     void show() {
         stage.show();
     }
-
-    ListProperty<Message> messagesProperty() { return messages; }
 }

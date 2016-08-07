@@ -18,18 +18,23 @@ import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
+import javafx.concurrent.Task;
 
-class ParseTask extends BaseTask<Boolean> {
+class ParseTask extends Task<Boolean> {
     private final File root;
     private final BlockingQueue<Docket> inQueue;
     private final BlockingQueue<Docket> outQueue;
     private final int n;
+
+    private final Logger logger = LoggerFactory.getLogger(ParseTask.class);
 
     ParseTask(File root, BlockingQueue<Docket> inQueue, BlockingQueue<Docket> outQueue, int n) {
         this.root = root;
@@ -65,16 +70,13 @@ class ParseTask extends BaseTask<Boolean> {
                             docket.status = Docket.Status.PARSED;
                         } catch (IOException ex) {
                             docket.status = Docket.Status.PASS;
-                            addMessage(Message.Level.WARN,
-                                "I/O exception while processing " + docket.relPath, ex);
+                            logger.warn("I/O exception while processing {}", docket.relPath, ex);
                         } catch (SAXException ex) {
                             docket.status = Docket.Status.PASS;
-                            addMessage(Message.Level.WARN,
-                                "SAX exception while processing " + docket.relPath, ex);
+                            logger.warn("SAX exception while processing {}", docket.relPath, ex);
                         } catch (TikaException ex) {
                             docket.status = Docket.Status.PASS;
-                            addMessage(Message.Level.WARN,
-                                "Tika exception while processing " + docket.relPath, ex);
+                            logger.warn("Tika exception while processing {}", docket.relPath, ex);
                         }
                         // fall through
                     case PASS:    // fall through
@@ -83,9 +85,8 @@ class ParseTask extends BaseTask<Boolean> {
                         updateProgress(++count, n);
                         break;
                     default:
-                        addMessage(Message.Level.ERROR,
-                            "Unexpected docket state while processing " + docket.relPath,
-                            docket.status.toString());
+                        logger.error("Unexpected docket state while processing {}: {}",
+                            docket.relPath, docket.status.toString());
                         outQueue.put(Docket.DONE);
                         cancel(true);   // cancel task
                 }
@@ -100,7 +101,7 @@ class ParseTask extends BaseTask<Boolean> {
                 updateMessage("cancelled");
             } else {
                 updateMessage("interrupted");
-                addMessage(Message.Level.ERROR, "Interrupted", ex);
+                logger.error("Interrupted", ex);
             }
         }
         return result;

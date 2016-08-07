@@ -14,22 +14,23 @@
  */
 package com.github.alvanson.xltsearch;
 
-class Message {
-    static enum Level {
-        TRACE, DEBUG, INFO, WARN, ERROR
-    }
+import java.util.Map;
+import java.util.HashMap;
 
-    final long timestamp;
-    final Level level;
-    final String from;
-    final String summary;
-    final String details;
+import org.slf4j.ILoggerFactory;
+import org.slf4j.Logger;
 
-    Message(long timestamp, Level level, String from, String summary, String details) {
-        this.timestamp = timestamp;
-        this.level = level;
-        this.from = from;
-        this.summary = summary;
-        this.details = details;
+public class MessageLoggerFactory implements ILoggerFactory {
+    public static final Map<String,Logger> loggerCache = new HashMap<>();
+
+    public Logger getLogger(String name) {
+        synchronized (loggerCache) {
+            Logger logger = loggerCache.get(name);
+            if (logger == null) {
+                logger = new MessageLogger(name);
+                loggerCache.put(name, logger);
+            }
+            return logger;
+        }
     }
 }
