@@ -27,7 +27,9 @@ public class MessageLoggerFactory implements ILoggerFactory {
         synchronized (loggerCache) {
             Logger logger = loggerCache.get(name);
             if (logger == null) {
-                logger = new MessageLogger(name);
+                // demote messages originating from outside this package
+                boolean demote = !name.startsWith(getClass().getPackage().getName());
+                logger = new MessageLogger(name, demote);
                 loggerCache.put(name, logger);
             }
             return logger;

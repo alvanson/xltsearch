@@ -34,8 +34,11 @@ class MessageLogger extends MarkerIgnoringBase {
     private static final SimpleListProperty<Message> messages =
         new SimpleListProperty<>(FXCollections.observableList(new LinkedList<>()));
 
-    MessageLogger(String name) {
+    private final boolean demote;   // true = demote messages by one level
+
+    MessageLogger(String name, boolean demote) {
         this.name = name.substring(name.lastIndexOf(".") + 1);
+        this.demote = demote;
     }
 
     private void add(Message.Level level, String msg) {
@@ -57,26 +60,31 @@ class MessageLogger extends MarkerIgnoringBase {
     }
 
     private void log(Message.Level level, String msg) {
+        level = relevel(level);
         if (level.compareTo(logLevel.get()) >= 0) {
             add(level, msg);
         }
     }
     private void log(Message.Level level, String format, Object... arguments) {
+        level = relevel(level);
         if (level.compareTo(logLevel.get()) >= 0) {
             add(level, MessageFormatter.arrayFormat(format, arguments));
         }
     }
     private void log(Message.Level level, String format, Object arg1, Object arg2) {
+        level = relevel(level);
         if (level.compareTo(logLevel.get()) >= 0) {
             add(level, MessageFormatter.format(format, arg1, arg2));
         }
     }
     private void log(Message.Level level, String format, Object arg) {
+        level = relevel(level);
         if (level.compareTo(logLevel.get()) >= 0) {
             add(level, MessageFormatter.format(format, arg));
         }
     }
     private void log(Message.Level level, String msg, Throwable t) {
+        level = relevel(level);
         if (level.compareTo(logLevel.get()) >= 0) {
             add(level, msg, t);
         }
@@ -175,6 +183,19 @@ class MessageLogger extends MarkerIgnoringBase {
     }
     public boolean isErrorEnabled() {
         return (Message.Level.ERROR.compareTo(logLevel.get()) >= 0);
+    }
+
+    private Message.Level relevel(Message.Level level) {
+        if (demote) {
+            switch (level) {
+                case ERROR: return Message.Level.WARN;
+                case WARN: return Message.Level.INFO;
+                case INFO: return Message.Level.DEBUG;
+                case DEBUG: return Message.Level.TRACE;
+                default: return Message.Level.TRACE;
+            }
+        }   // else:
+        return level;
     }
 
     static String getStackTrace(Throwable t) {
