@@ -16,6 +16,7 @@ package com.github.alvanson.xltsearch;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.standard.ClassicAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer;
 import org.apache.lucene.store.Directory;
@@ -66,6 +67,7 @@ class Config {
     private static final Map<String,Function<Version,Analyzer>> LUCENE_ANALYZER =
         Collections.unmodifiableMap(new LinkedHashMap<String,Function<Version,Analyzer>>() {{
             put("Standard", (v) -> new StandardAnalyzer(v));
+            put("Classic", (v) -> new ClassicAnalyzer(v));
             put("UAX29URLEmail", (v) -> new UAX29URLEmailAnalyzer(v));
             put("English", (v) -> new EnglishAnalyzer(v));
         }});
@@ -137,7 +139,7 @@ class Config {
         return properties.getProperty(propertyName);
     }
 
-    String getIndexMessage() {
+    String getIndexStatus() {
         StringBuilder sb = new StringBuilder();
         long lastUpdated = getLastUpdated();
         if (lastUpdated >= 0) {

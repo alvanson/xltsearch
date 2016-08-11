@@ -150,7 +150,7 @@ class Configurator {
             grid.add(new Label(" "), 0, row, 3, 1);  // row spacer
 
             // index status
-            final Label statusMessage = new Label(config.getIndexMessage());
+            final Label statusMessage = new Label(config.getIndexStatus());
             statusMessage.setAlignment(Pos.BASELINE_RIGHT);
             statusMessage.setMaxWidth(Double.MAX_VALUE);
 

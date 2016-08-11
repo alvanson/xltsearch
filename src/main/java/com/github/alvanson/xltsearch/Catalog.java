@@ -74,9 +74,7 @@ class Catalog {
         this.root = root;
         this.validConfig = false;
         indexStart = -1;
-        updateIndexDetails();
-        updateIndexStatus();
-        searchDetails.set("");
+        clearMessages();
     }
 
     List<String> getConfigs() {
@@ -134,12 +132,8 @@ class Catalog {
                 }
             }
         }
-        // blank all messages
         indexStart = -1;
-        updateIndexDetails();
-        updateIndexStatus();
-        searchDetails.set("");
-        searchResults.get().clear();
+        clearMessages();
     }
 
     // return list of all files (recursively) under root as relative paths
@@ -217,8 +211,7 @@ class Catalog {
                 }
             }   // else/catch: index already marked INDEX_UPDATE_FAILED
             indexStart = -1;
-            updateIndexDetails();
-            updateIndexStatus();
+            clearMessages();
         });
         // start threads
         startTask(selectTask);
@@ -255,7 +248,7 @@ class Catalog {
                 Math.max(Math.floor(indexProgress.get()*100), 0),   // avoid -%
                 parseTask.messageProperty().get()));
         } else {    // no longer updating
-            indexMessage.set(config.getIndexMessage());
+            indexMessage.set(config.getIndexStatus());
             indexProgress.unbind(); // not/no longer updating
             if (config.getLastUpdated() >= 0) {
                 indexProgress.set(1);   // no error
@@ -313,10 +306,16 @@ class Catalog {
         if (selectTask != null) {
             selectTask.cancel();
         }
-        // update status
         indexStart = -1;
+        clearMessages();
+    }
+
+    void clearMessages() {
         updateIndexDetails();
         updateIndexStatus();
+        searchDetails.unbind();
+        searchDetails.set("");
+        searchResults.get().clear();
     }
 
     void close() {

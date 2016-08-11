@@ -68,6 +68,7 @@ class SearchTask extends Task<List<SearchResult>> {
             IndexSearcher isearcher = new IndexSearcher(ireader);
             QueryParser parser = new QueryParser(version, indexFields.content, analyzer);
             Query query = parser.parse(qstr);
+            logger.debug("Query: {}", query);
             ScoreDoc[] hits = isearcher.search(query, limit).scoreDocs;
             // collect results
             results = new ArrayList<>(hits.length);
@@ -79,7 +80,7 @@ class SearchTask extends Task<List<SearchResult>> {
                 if (title == null) {
                     title = "";
                 }
-                // report metadata in `moreInfo`
+                // report metadata in `details`
                 StringBuilder sb = new StringBuilder();
                 for (IndexableField field : document.getFields()) {
                     if (field.stringValue() != null) {
