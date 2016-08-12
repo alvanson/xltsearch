@@ -8,6 +8,7 @@ XLTSearch is a high-performance, portable and configurable desktop search applic
 ![screenshot](https://i.imgur.com/9EfmPmj.png)
 
   * [Download XLTSearch 0.0.1](https://github.com/alvanson/xltsearch/releases/download/v0.0.1/xltsearch-0.0.1.jar)
+  * [Changelog](CHANGELOG.md)
 
 Motivation
 ----------
