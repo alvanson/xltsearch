@@ -1,7 +1,7 @@
 Changelog
 =========
 
-[0.0.2] UNRELEASED
+[0.0.2] 2016-08-12
 ------------------
   * Includes SLF4J 1.7.7.
   * Added support for Lucene ClassicAnalyzer.

@@ -3,17 +3,17 @@ XLTSearch
 
 XLTSearch is a high-performance, portable and configurable desktop search application / information retrieval system intended for fast, full-text and metadata searches over a large but relatively unchanging collection of documents.  XLTSearch uses the JavaFX platform (X), the Apache Lucene full-text search library (L) and the Apache Tika content analysis toolkit (T).  Other than Java and JavaFX 8, XLTSearch has no other external dependencies, enabling the creation of portable, fully searchable document repositories.
 
-**Current version:** XLTSearch 0.0.1 includes Apache Lucene 4.6.1 and Apache Tika 1.13.
+**Current version:** XLTSearch 0.0.2 includes Apache Lucene 4.6.1, Apache Tika 1.13 and SLF4J 1.7.7.
 
-![screenshot](https://i.imgur.com/9EfmPmj.png)
+![screenshot](https://i.imgur.com/BGeHXj1.png)
 
-  * [Download XLTSearch 0.0.1](https://github.com/alvanson/xltsearch/releases/download/v0.0.1/xltsearch-0.0.1.jar)
+  * [Download XLTSearch 0.0.2](https://github.com/alvanson/xltsearch/releases/download/v0.0.2/xltsearch-0.0.2.jar)
   * [Changelog](CHANGELOG.md)
 
 Motivation
 ----------
 
-XLTSearch is inspired by two similar open-source projects: [DocFetcher](http://docfetcher.sourceforge.net) and [FXDesktopSearch](https://github.com/mirkosertic/FXDesktopSearch). Differences of note from these projects are:
+XLTSearch is inspired by two similar open-source projects: [DocFetcher](http://docfetcher.sourceforge.net) and [FXDesktopSearch](https://github.com/mirkosertic/FXDesktopSearch).  Differences of note from these projects are:
 
   * XLTSearch supports all file types supported by Apache Tika.
   * XLTSearch extracts a common set of metadata from all documents (where available) and makes these fields searchable.
@@ -44,7 +44,7 @@ Note that XLTSearch has **not** yet been tested on Java 9.
 Build Instructions
 ------------------
 
-To maintain a consistent development and build environment, XLTSearch is built using Apache Maven inside a Vagrant virtual machine. The `Vagrantfile` for the build environment is provided in this repository. The "uber-jar" is created using `mvn package` in the VM.
+To maintain a consistent development and build environment, XLTSearch is built using Apache Maven inside a Vagrant virtual machine.  The `Vagrantfile` for the build environment is provided in this repository.  The "uber-jar" is created using `mvn package` in the VM.
 
 Contributing
 ------------
@@ -64,4 +64,4 @@ XLTSearch is licensed under the Apache License 2.0 and is provided on an "AS IS"
 Acknowledgements
 -----------------
 
-XLTSearch includes Apache Lucene and Apache Tika.  Refer to `NOTICE.txt` for attribution notices.
+XLTSearch includes Apache Lucene, Apache Tika and SLF4J.  Refer to `NOTICE.txt` for attribution notices.

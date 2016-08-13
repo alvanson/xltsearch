@@ -42,7 +42,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 class Config {
-    public static final String XLT_VERSION = "0.0.2-SNAPSHOT";
+    public static final String XLT_VERSION = "0.0.2";
 
     public static final long INDEX_UPDATE_FAILED = -1;
     public static final long INDEX_NEVER_CREATED = -2;
