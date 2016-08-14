@@ -19,6 +19,9 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.standard.ClassicAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -71,6 +74,12 @@ class Config {
             put("UAX29URLEmail", (v) -> new UAX29URLEmailAnalyzer(v));
             put("English", (v) -> new EnglishAnalyzer(v));
         }});
+    // scoring.model
+    private static final Map<String,Supplier<Similarity>> SCORING_MODEL =
+        Collections.unmodifiableMap(new LinkedHashMap<String,Supplier<Similarity>>() {{
+            put("Default", DefaultSimilarity::new);
+            put("BM25", BM25Similarity::new);
+        }});
     // directory.type
     private static final Map<String,Function<File,Directory>> DIRECTORY_TYPE =
         Collections.unmodifiableMap(new LinkedHashMap<String,Function<File,Directory>>() {{
@@ -96,6 +105,7 @@ class Config {
             put("hash.algorithm", HASH_ALGORITHM);
             put("lucene.version", LUCENE_VERSION);
             put("lucene.analyzer", LUCENE_ANALYZER);
+            put("scoring.model", SCORING_MODEL);
             put("directory.type", DIRECTORY_TYPE);
             put("index.fields", INDEX_FIELDS);
         }});
