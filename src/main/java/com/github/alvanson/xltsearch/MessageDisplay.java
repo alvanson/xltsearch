@@ -24,6 +24,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
@@ -44,7 +45,9 @@ class MessageDisplay {
 
     MessageDisplay() {
         stage.setTitle("Messages");
-
+        stage.getIcons().addAll(new Image(getClass().getResourceAsStream("/icon32.png")),
+                                new Image(getClass().getResourceAsStream("/icon22.png")),
+                                new Image(getClass().getResourceAsStream("/icon16.png")));
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/message_display.fxml"));
         fxmlLoader.setController(this);
         try {

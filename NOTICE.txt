@@ -220,3 +220,5 @@ For details, see http://www.slf4j.org/license.html.
 
 This product includes code from slf4j-simple 1.7.7, which is available under
 the MIT license.  For details, see src/main/java/org/slf4j/impl/LICENSE.txt.
+
+This product includes public domain icons from the Tango Icon Theme 0.8.90.
