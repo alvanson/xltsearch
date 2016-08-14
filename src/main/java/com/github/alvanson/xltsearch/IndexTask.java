@@ -29,12 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import javafx.concurrent.Task;
 
-class IndexTask extends Task<Map<String,String>> {
+class IndexTask extends Task<Boolean> {
     private final BlockingQueue<Docket> inQueue;
     private final Version version;
     private final Analyzer analyzer;
@@ -55,9 +54,9 @@ class IndexTask extends Task<Map<String,String>> {
     }
 
     @Override
-    protected Map<String,String> call() {
-        Map<String,String> hashSums = new HashMap<>();
+    protected Boolean call() {
         IndexWriter iwriter = null;
+        boolean result = false;
         int count = 0;
         Docket docket;
 
@@ -87,10 +86,13 @@ class IndexTask extends Task<Map<String,String>> {
                                 doc.add(new TextField(e.getKey(), value, Field.Store.YES));
                             }
                         }
+                        // store hashsum
+                        doc.add(new StringField(indexFields.hashSum,
+                            docket.hashSum, Field.Store.YES));
+                        // add/update document
                         iwriter.updateDocument(new Term(indexFields.path, docket.relPath), doc);
                         // fall through
                     case PASS:
-                        hashSums.put(docket.relPath, docket.hashSum);
                         break;
                     case DELETE:
                         iwriter.deleteDocuments(new Term(indexFields.path, docket.relPath));
@@ -105,6 +107,7 @@ class IndexTask extends Task<Map<String,String>> {
             // end of queue
             updateMessage("complete");
             updateProgress(n, n);
+            result = true;
         } catch (IOException ex) {
             updateMessage("I/O exception");
             logger.error("I/O exception while writing to index", ex);
@@ -124,6 +127,6 @@ class IndexTask extends Task<Map<String,String>> {
                 logger.warn("I/O exception while closing index writer", ex);
             }
         }
-        return hashSums;
+        return result;
     }
 }

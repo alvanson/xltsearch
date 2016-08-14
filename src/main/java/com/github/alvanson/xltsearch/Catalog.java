@@ -21,15 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Function;
@@ -45,7 +39,6 @@ import javafx.concurrent.Task;
 
 class Catalog {
     private static final String CATALOG_DIR = ".xltstore";
-    private static final String HASH_SUMS_COMMENT = "XLTSearch Hash Sums";
 
     private final File root;
     private boolean validConfig;
@@ -170,46 +163,22 @@ class Catalog {
         // recursively list all files in folder
         List<String> files = listFiles();
         int n = files.size();
-        // load hash sums
-        Properties hashSums = new Properties();
-        final File hashSumsFile = config.getHashSumsFile();
-        long lastUpdated = config.getLastUpdated();
-        if (hashSumsFile.exists()) {
-            try (FileInputStream in = new FileInputStream(hashSumsFile)) {
-                hashSums.load(in);
-            } catch (IOException ex) {
-                logger.error("I/O exception while loading hash sums", ex);
-            }
-        }
-        // convert Properties to proper Map<String,String>
-        Map<String,String> hashSumMap = new HashMap<>();
-        for (String relPath : hashSums.stringPropertyNames()) {
-            hashSumMap.put(relPath, hashSums.getProperty(relPath));
-        }
         // initialize queues
         BlockingQueue<Docket> parseQueue = new ArrayBlockingQueue<>(1); // lean queue
         BlockingQueue<Docket> indexQueue = new ArrayBlockingQueue<>(1); // lean queue
         // initalize tasks
-        selectTask = new SelectTask(root, files, config.get("hash.algorithm"),
-            Collections.unmodifiableMap(hashSumMap), parseQueue, n);
+        selectTask = new SelectTask(root, files, config.get("hash.algorithm"), directory,
+            indexFields, parseQueue, n);
         parseTask = new ParseTask(root, parseQueue, indexQueue, n);
         indexTask = new IndexTask(indexQueue, version, analyzer, directory, indexFields, n);
         // communicate progress (use parseTask for current file, indexTask for %)
         parseTask.messageProperty().addListener((o, oldValue, newValue) -> updateIndexStatus());
         indexProgress.bind(indexTask.progressProperty());
         indexTask.setOnSucceeded((event) -> {
-            if (indexTask.getValue() != null && parseTask.getValue() && selectTask.getValue()) {
-                Properties newHashSums = new Properties();
-                for (Map.Entry<String,String> e : indexTask.getValue().entrySet()) {
-                    newHashSums.setProperty(e.getKey(), e.getValue());
-                }
-                try (FileOutputStream out = new FileOutputStream(hashSumsFile)) {
-                    newHashSums.store(out, HASH_SUMS_COMMENT);
-                    config.setLastUpdated(indexStart);  // everything worked
-                } catch (IOException ex) {
-                    logger.error("I/O exception while saving hash sums", ex);
-                }
-            }   // else/catch: index already marked INDEX_UPDATE_FAILED
+            if (indexTask.getValue() && parseTask.getValue() && selectTask.getValue()) {
+                // everything worked
+                config.setLastUpdated(indexStart);
+            }   // else: index already marked INDEX_UPDATE_FAILED
             indexStart = -1;
             clearMessages();
         });

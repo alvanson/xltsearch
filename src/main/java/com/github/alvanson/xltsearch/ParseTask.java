@@ -45,7 +45,7 @@ class ParseTask extends Task<Boolean> {
 
     @Override
     protected Boolean call() {
-        Boolean result = false;
+        boolean result = false;
         int count = 0;
         Docket docket;
 
