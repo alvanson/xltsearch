@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,62 +39,64 @@ import javafx.concurrent.Task;
 
 class SelectTask extends Task<Boolean> {
     private final File root;
-    private final List<String> files;
     private final String algorithm;
     private final Directory directory;
     private final IndexFields indexFields;
     private final BlockingQueue<Docket> outQueue;
-    private final int n;
 
     private final Logger logger = LoggerFactory.getLogger(SelectTask.class);
 
-    SelectTask(File root, List<String> files, String algorithm, Directory directory,
-            IndexFields indexFields, BlockingQueue<Docket> outQueue, int n) {
+    SelectTask(File root, String algorithm, Directory directory, IndexFields indexFields,
+            BlockingQueue<Docket> outQueue) {
         this.root = root;
-        this.files = files;
         this.algorithm = algorithm;
         this.directory = directory;
         this.indexFields = indexFields;
         this.outQueue = outQueue;
-        this.n = n;
     }
 
     @Override
     protected Boolean call() {
         boolean result = false;
-        int count = 0;
 
         updateMessage("started");
-        updateProgress(0, n);
-
         try {
+            int count = 0;
+            List<String> files = listFiles();
             Map<String,String> hashSums = getHashSums();
+            long workLeft = Math.max(files.size(), hashSums.size());    // close enough
             // avoid repeatedly recreating digest object and bytes array
             MessageDigest digest = MessageDigest.getInstance(algorithm);
             byte[] bytes = new byte[8192];
             // select files
             for (String relPath : files) {
+                count++;
+                workLeft--;
                 updateMessage(relPath);
                 File file = new File(root.getPath() + File.separator + relPath);
                 String hashSum = computeHashSum(file, digest, bytes);
                 // compare hash
                 if (!hashSum.equals(hashSums.get(relPath))) {
-                    outQueue.put(new Docket(relPath, hashSum, Docket.Status.SELECTED));
+                    outQueue.put(new Docket(relPath, hashSum, Docket.Status.SELECTED, workLeft));
                 } else {    // hashes are the same
-                    outQueue.put(new Docket(relPath, hashSum, Docket.Status.PASS));
+                    outQueue.put(new Docket(relPath, hashSum, Docket.Status.PASS, workLeft));
                 }
                 // remove from map (see below)
                 hashSums.remove(relPath);
-                updateProgress(++count, n);
+                updateProgress(count, count + workLeft);
             }
             // delete nonexistent files from index (those not removed above)
+            workLeft = hashSums.keySet().size();
             for (String relPath : hashSums.keySet()) {
+                count++;
+                workLeft--;
                 updateMessage("Deleting" + relPath);
-                outQueue.put(new Docket(relPath, "", Docket.Status.DELETE));
+                outQueue.put(new Docket(relPath, "", Docket.Status.DELETE, workLeft));
+                updateProgress(count, count + workLeft);
             }
             // done
             updateMessage("complete");
-            updateProgress(n, n);
+            updateProgress(count, count + workLeft);
             outQueue.put(Docket.DONE);
             result = true;
         } catch (NoSuchAlgorithmException ex) {
@@ -108,6 +111,28 @@ class SelectTask extends Task<Boolean> {
             }
         }
         return result;
+    }
+
+    // return list of all files (recursively) under root as relative paths
+    private List<String> listFiles() { return listFiles(""); }
+    // caller must ensure that rel contains trailing separator
+    private List<String> listFiles(String rel) {
+        List<String> files = new ArrayList<>();
+        // build absolute path name
+        String abs = root.getPath() + File.separator + rel;
+        // iterate through each file and directory in `<root>/rel`
+        File dir = new File(abs);
+        for (String name : dir.list()) {
+            if (!name.equals(Catalog.CATALOG_DIR)) {  // don't index the catalog
+                File file = new File(abs + name);
+                if (file.isDirectory()) {
+                    files.addAll(listFiles(rel + name + File.separator));
+                } else {
+                    files.add(rel + name);
+                }
+            }
+        }
+        return files;
     }
 
     private Map<String,String> getHashSums() {

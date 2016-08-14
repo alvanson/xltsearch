@@ -19,7 +19,7 @@ import org.xml.sax.ContentHandler;
 
 class Docket {
     // sentinel object: all files completed
-    static Docket DONE = new Docket("", "", Status.PASS);
+    static Docket DONE = new Docket("", "", Status.PASS, 0);
 
     static enum Status {
         SELECTED,   // selected by SelectTask
@@ -33,12 +33,14 @@ class Docket {
     ContentHandler content;
     Metadata metadata;
     Status status;
+    long workLeft;
 
-    Docket(String relPath, String hashSum, Status status) {
+    Docket(String relPath, String hashSum, Status status, long workLeft) {
         this.relPath = relPath;
         this.hashSum = hashSum;
         this.content = null;
         this.metadata = null;
         this.status = status;
+        this.workLeft = workLeft;
     }
 }

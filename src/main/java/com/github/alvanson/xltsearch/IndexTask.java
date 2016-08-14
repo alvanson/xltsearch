@@ -41,38 +41,36 @@ class IndexTask extends Task<Boolean> {
     private final Similarity similarity;
     private final Directory directory;
     private final IndexFields indexFields;
-    private final int n;
 
     private final Logger logger = LoggerFactory.getLogger(IndexTask.class);
 
     IndexTask(BlockingQueue<Docket> inQueue, Version version, Analyzer analyzer,
-            Similarity similarity, Directory directory, IndexFields indexFields, int n) {
+            Similarity similarity, Directory directory, IndexFields indexFields) {
         this.inQueue = inQueue;
         this.version = version;
         this.analyzer = analyzer;
         this.similarity = similarity;
         this.directory = directory;
         this.indexFields = indexFields;
-        this.n = n;
     }
 
     @Override
     protected Boolean call() {
         IndexWriter iwriter = null;
         boolean result = false;
-        int count = 0;
-        Docket docket;
 
         updateMessage("started");
-        updateProgress(0, 1);
-
         try {
+            int count = 0;
+            Docket docket;
+
             IndexWriterConfig config = new IndexWriterConfig(version, analyzer);
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
             config.setSimilarity(similarity);
             iwriter = new IndexWriter(directory, config);
 
             while ((docket = inQueue.take()) != Docket.DONE) {
+                count++;
                 updateMessage(docket.relPath);
                 switch (docket.status) {
                     case PARSED:
@@ -106,11 +104,11 @@ class IndexTask extends Task<Boolean> {
                             docket.relPath, docket.status.toString());
                         cancel(true);   // cancel task
                 }
-                updateProgress(++count, n);
+                updateProgress(count, count + docket.workLeft);
             }
             // end of queue
             updateMessage("complete");
-            updateProgress(n, n);
+            updateProgress(count, count + docket.workLeft);
             result = true;
         } catch (IOException ex) {
             updateMessage("I/O exception");

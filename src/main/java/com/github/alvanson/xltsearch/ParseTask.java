@@ -32,28 +32,25 @@ class ParseTask extends Task<Boolean> {
     private final File root;
     private final BlockingQueue<Docket> inQueue;
     private final BlockingQueue<Docket> outQueue;
-    private final int n;
 
     private final Logger logger = LoggerFactory.getLogger(ParseTask.class);
 
-    ParseTask(File root, BlockingQueue<Docket> inQueue, BlockingQueue<Docket> outQueue, int n) {
+    ParseTask(File root, BlockingQueue<Docket> inQueue, BlockingQueue<Docket> outQueue) {
         this.root = root;
         this.inQueue = inQueue;
         this.outQueue = outQueue;
-        this.n = n;
     }
 
     @Override
     protected Boolean call() {
         boolean result = false;
-        int count = 0;
-        Docket docket;
 
         updateMessage("started");
-        updateProgress(0, n);
-
         try {
+            int count = 0;
+            Docket docket;
             while ((docket = inQueue.take()) != Docket.DONE) {
+                count++;
                 updateMessage(docket.relPath);
                 switch (docket.status) {
                     case SELECTED:
@@ -82,7 +79,7 @@ class ParseTask extends Task<Boolean> {
                     case PASS:    // fall through
                     case DELETE:  // fall through
                         outQueue.put(docket);
-                        updateProgress(++count, n);
+                        updateProgress(count, count + docket.workLeft);
                         break;
                     default:
                         logger.error("Unexpected docket state while processing {}: {}",
@@ -93,7 +90,7 @@ class ParseTask extends Task<Boolean> {
             }
             // end of queue
             updateMessage("complete");
-            updateProgress(n, n);
+            updateProgress(count, count + docket.workLeft);
             outQueue.put(docket);   // == Docket.DONE
             result = true;
         } catch (InterruptedException ex) {

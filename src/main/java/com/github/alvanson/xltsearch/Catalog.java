@@ -39,11 +39,12 @@ import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 
 class Catalog {
-    private static final String CATALOG_DIR = ".xltstore";
+    static final String CATALOG_DIR = ".xltstore";
 
     private final File root;
     private boolean validConfig;
     private Config config;
+    private String hashAlgorithm;
     private Version version;
     private Analyzer analyzer;
     private Similarity similarity;
@@ -110,6 +111,9 @@ class Catalog {
         // read configuration
         config = getConfig(name);   // will create config if !exists
         if (config.getLastUpdated() == Config.INDEX_INVALIDATED) { return; }
+        // hashAlgorithm
+        hashAlgorithm = config.get("hash.algorithm");
+        if (hashAlgorithm == null) { return; }
         // version
         version = config.get("lucene.version");
         if (version == null) { return; }
@@ -134,28 +138,6 @@ class Catalog {
         validConfig = true;
     }
 
-    // return list of all files (recursively) under root as relative paths
-    private List<String> listFiles() { return listFiles(""); }
-    // caller must ensure that rel contains trailing separator
-    private List<String> listFiles(String rel) {
-        List<String> files = new ArrayList<>();
-        // build absolute path name
-        String abs = root.getPath() + File.separator + rel;
-        // iterate through each file and directory in `<root>/rel`
-        File dir = new File(abs);
-        for (String name : dir.list()) {
-            if (!name.equals(CATALOG_DIR)) {  // don't index the catalog
-                File file = new File(abs + name);
-                if (file.isDirectory()) {
-                    files.addAll(listFiles(rel + name + File.separator));
-                } else {
-                    files.add(rel + name);
-                }
-            }
-        }
-        return files;
-    }
-
     void updateIndex() {
         if (!validConfig) {
             logger.error("Cannot update index: invalid configuration");
@@ -165,18 +147,14 @@ class Catalog {
         indexStart = System.currentTimeMillis();
         // set last.updated (temporarily) to UPDATE_FAILED in event of crash
         config.setLastUpdated(Config.INDEX_UPDATE_FAILED);
-        // recursively list all files in folder
-        List<String> files = listFiles();
-        int n = files.size();
         // initialize queues
         BlockingQueue<Docket> parseQueue = new ArrayBlockingQueue<>(1); // lean queue
         BlockingQueue<Docket> indexQueue = new ArrayBlockingQueue<>(1); // lean queue
         // initalize tasks
-        selectTask = new SelectTask(root, files, config.get("hash.algorithm"), directory,
-            indexFields, parseQueue, n);
-        parseTask = new ParseTask(root, parseQueue, indexQueue, n);
+        selectTask = new SelectTask(root, hashAlgorithm, directory, indexFields, parseQueue);
+        parseTask = new ParseTask(root, parseQueue, indexQueue);
         indexTask = new IndexTask(indexQueue, version, analyzer, similarity, directory,
-            indexFields, n);
+            indexFields);
         // communicate progress (use parseTask for current file, indexTask for %)
         parseTask.messageProperty().addListener((o, oldValue, newValue) -> updateIndexStatus());
         indexProgress.bind(indexTask.progressProperty());
