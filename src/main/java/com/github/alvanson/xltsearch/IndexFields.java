@@ -59,16 +59,19 @@ class IndexFields {
         }});
     private static final String PATH = "path";
     private static final String TITLE = "title";
+    private static final String HASHSUM = "hashsum";
 
     final String content;
     final Map<String,Property> metadata;
     final String path;
     final String title;
+    final String hashSum;
 
     IndexFields() {
         this.content = CONTENT;
         this.metadata = METADATA;
         this.path = PATH;
         this.title = TITLE;
+        this.hashSum = HASHSUM;
     }
 }

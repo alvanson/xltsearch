@@ -14,6 +14,13 @@
  */
 package com.github.alvanson.xltsearch;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.store.Directory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,10 +29,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import javax.xml.bind.DatatypeConverter;
 import javafx.concurrent.Task;
@@ -34,18 +40,20 @@ class SelectTask extends Task<Boolean> {
     private final File root;
     private final List<String> files;
     private final String algorithm;
-    private final Map<String,String> hashSums;
+    private final Directory directory;
+    private final IndexFields indexFields;
     private final BlockingQueue<Docket> outQueue;
     private final int n;
 
     private final Logger logger = LoggerFactory.getLogger(SelectTask.class);
 
-    SelectTask(File root, List<String> files, String algorithm, Map<String,String> hashSums,
-            BlockingQueue<Docket> outQueue, int n) {
+    SelectTask(File root, List<String> files, String algorithm, Directory directory,
+            IndexFields indexFields, BlockingQueue<Docket> outQueue, int n) {
         this.root = root;
         this.files = files;
         this.algorithm = algorithm;
-        this.hashSums = hashSums;
+        this.directory = directory;
+        this.indexFields = indexFields;
         this.outQueue = outQueue;
         this.n = n;
     }
@@ -59,37 +67,27 @@ class SelectTask extends Task<Boolean> {
         updateProgress(0, n);
 
         try {
+            Map<String,String> hashSums = getHashSums();
             // avoid repeatedly recreating digest object and bytes array
             MessageDigest digest = MessageDigest.getInstance(algorithm);
             byte[] bytes = new byte[8192];
-            int bytesRead;
             // select files
             for (String relPath : files) {
                 updateMessage(relPath);
-                try (FileInputStream stream =
-                        new FileInputStream(root.getPath() + File.separator + relPath)) {
-                    // compute hash
-                    digest.reset();
-                    // block reads are MUCH faster than byte-at-a-time read()
-                    while ((bytesRead = stream.read(bytes)) != -1) {
-                        digest.update(bytes, 0, bytesRead);
-                    }
-                    String hashSum = DatatypeConverter.printHexBinary(digest.digest());
-                    // compare hash
-                    if (!hashSum.equals(hashSums.get(relPath))) {
-                        outQueue.put(new Docket(relPath, hashSum, Docket.Status.SELECTED));
-                    } else {    // same
-                        outQueue.put(new Docket(relPath, hashSum, Docket.Status.PASS));
-                    }
-                } catch (IOException ex) {
-                    logger.warn("I/O exception while processing {}", relPath, ex);
+                File file = new File(root.getPath() + File.separator + relPath);
+                String hashSum = computeHashSum(file, digest, bytes);
+                // compare hash
+                if (!hashSum.equals(hashSums.get(relPath))) {
+                    outQueue.put(new Docket(relPath, hashSum, Docket.Status.SELECTED));
+                } else {    // hashes are the same
+                    outQueue.put(new Docket(relPath, hashSum, Docket.Status.PASS));
                 }
+                // remove from map (see below)
+                hashSums.remove(relPath);
                 updateProgress(++count, n);
             }
-            // delete nonexistent files from index
-            Set<String> difference = new HashSet<>(hashSums.keySet());
-            difference.removeAll(files);    // files in hashSums but no longer in root
-            for (String relPath : difference) {
+            // delete nonexistent files from index (those not removed above)
+            for (String relPath : hashSums.keySet()) {
                 updateMessage("Deleting" + relPath);
                 outQueue.put(new Docket(relPath, "", Docket.Status.DELETE));
             }
@@ -110,5 +108,53 @@ class SelectTask extends Task<Boolean> {
             }
         }
         return result;
+    }
+
+    private Map<String,String> getHashSums() {
+        Map<String,String> hashSums = new HashMap<>();
+        DirectoryReader ireader = null;
+        try {
+            if (DirectoryReader.indexExists(directory)) {
+                // read hashsums from `directory`
+                ireader = DirectoryReader.open(directory);
+                IndexSearcher isearcher = new IndexSearcher(ireader);
+                Query query = new MatchAllDocsQuery();
+                ScoreDoc[] hits = isearcher.search(query, ireader.numDocs()+1).scoreDocs;
+                // collect results
+                for (ScoreDoc hit : hits) {
+                    Document document = isearcher.doc(hit.doc);
+                    String relPath = document.get(indexFields.path);
+                    String hashSum = document.get(indexFields.hashSum);
+                    if (relPath != null && hashSum != null) {
+                        hashSums.put(relPath, hashSum);
+                    }
+                }
+            }   // else: return empty map
+        } catch (IOException ex) {
+            logger.error("I/O exception while reading index", ex);
+        }
+        if (ireader != null) {
+            try {
+                ireader.close();
+            } catch (IOException ex) {
+                logger.warn("I/O exception while closing index reader", ex);
+            }
+        }
+        return hashSums;
+    }
+
+    private String computeHashSum(File file, MessageDigest digest, byte[] bytes) {
+        String hashSum = "";
+        int bytesRead;
+        try (FileInputStream stream = new FileInputStream(file)) {
+            digest.reset();
+            while ((bytesRead = stream.read(bytes)) != -1) {
+                digest.update(bytes, 0, bytesRead);
+            }
+            hashSum = DatatypeConverter.printHexBinary(digest.digest());
+        } catch (IOException ex) {
+            logger.warn("I/O exception while processing {}", file, ex);
+        }
+        return hashSum;
     }
 }
