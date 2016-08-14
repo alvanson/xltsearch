@@ -99,8 +99,6 @@ class Config {
             put("directory.type", DIRECTORY_TYPE);
             put("index.fields", INDEX_FIELDS);
         }});
-    // other files
-    private static final String HASH_SUMS_FILE = "hashsums";
     private static final String INDEX_DIR = "index";
 
     private final File configDir;
@@ -115,10 +113,6 @@ class Config {
         this.properties = new PersistentProperties(
             new File(configDir.getPath() + File.separator + CONFIG_FILE),
             CONFIG_COMMENT, getClass().getResourceAsStream(CONFIG_DEFAULTS));
-        // check validitiy of index
-        if (getLastUpdated() == INDEX_NEVER_CREATED && getHashSumsFile().exists()) {
-            invalidateIndex();
-        }
     }
 
     Set<String> getPropertyNames() {
@@ -188,10 +182,6 @@ class Config {
         return t;
     }
 
-    File getHashSumsFile() {
-        return new File(configDir.getPath() + File.separator + HASH_SUMS_FILE);
-    }
-
     File getIndexDir() {
         return new File(configDir.getPath() + File.separator + INDEX_DIR);
     }
@@ -217,7 +207,6 @@ class Config {
     void clearIndex() {
         try {
             deltree(getIndexDir());
-            Files.deleteIfExists(getHashSumsFile().toPath());
             set("last.updated", Long.toString(INDEX_NEVER_CREATED));
         } catch (IOException ex) {
             logger.error("Could not clear index", ex);
