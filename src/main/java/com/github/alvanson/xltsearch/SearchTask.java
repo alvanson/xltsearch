@@ -15,9 +15,9 @@
 package com.github.alvanson.xltsearch;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import javafx.concurrent.Task;
 
@@ -72,7 +71,7 @@ class SearchTask extends Task<List<SearchResult>> {
             ScoreDoc[] hits = isearcher.search(query, limit).scoreDocs;
             // collect results
             results = new ArrayList<>(hits.length);
-            for (ScoreDoc hit : Arrays.asList(hits)) {
+            for (ScoreDoc hit : hits) {
                 Document document = isearcher.doc(hit.doc);
                 File file = new File(
                     root.getPath() + File.separator + document.get(indexFields.path));
