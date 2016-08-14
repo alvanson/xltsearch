@@ -23,6 +23,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ class SearchTask extends Task<List<SearchResult>> {
     private final File root;
     private final Version version;
     private final Analyzer analyzer;
+    private final Similarity similarity;
     private final Directory directory;
     private final IndexFields indexFields;
     private final String qstr;
@@ -45,11 +47,12 @@ class SearchTask extends Task<List<SearchResult>> {
 
     private final Logger logger = LoggerFactory.getLogger(SearchTask.class);
 
-    SearchTask(File root, Version version, Analyzer analyzer, Directory directory,
-            IndexFields indexFields, String qstr, int limit) {
+    SearchTask(File root, Version version, Analyzer analyzer, Similarity similarity,
+            Directory directory, IndexFields indexFields, String qstr, int limit) {
         this.root = root;
         this.version = version;
         this.analyzer = analyzer;
+        this.similarity = similarity;
         this.directory = directory;
         this.indexFields = indexFields;
         this.qstr = qstr;
@@ -65,6 +68,7 @@ class SearchTask extends Task<List<SearchResult>> {
         try {
             ireader = DirectoryReader.open(directory);
             IndexSearcher isearcher = new IndexSearcher(ireader);
+            isearcher.setSimilarity(similarity);
             QueryParser parser = new QueryParser(version, indexFields.content, analyzer);
             Query query = parser.parse(qstr);
             logger.debug("Query: {}", query);

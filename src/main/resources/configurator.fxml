@@ -32,8 +32,8 @@
         <VBox spacing="10">
             <padding><Insets topRightBottomLeft="10" /></padding>
             <HBox spacing="10">
-                <TextField fx:id="newField" />
-                <Button text="New" onAction="#newConfig" HBox.hgrow="ALWAYS" />
+                <TextField fx:id="newField" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
+                <Button text="New" onAction="#newConfig" />
             </HBox>
             <ListView fx:id="listView" VBox.vgrow="ALWAYS" />
         </VBox>
@@ -44,7 +44,7 @@
         </fx:define>
         <HBox spacing="10">
             <minHeight><HBox fx:constant="USE_PREF_SIZE" /></minHeight>
-            <padding><Insets topRightBottomLeft="10" /></padding>
+            <padding><Insets top="0" right="10" bottom="10" left="10" /></padding>
             <Button text="About" prefWidth="$BUTTON_WIDTH" onAction="#showAbout" />
             <Region HBox.hgrow="ALWAYS" /><!-- spacer -->
             <Button text="Load" prefWidth="$BUTTON_WIDTH" onAction="#loadConfig" />

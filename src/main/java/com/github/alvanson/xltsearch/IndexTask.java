@@ -22,6 +22,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.apache.tika.metadata.Property;
@@ -37,6 +38,7 @@ class IndexTask extends Task<Boolean> {
     private final BlockingQueue<Docket> inQueue;
     private final Version version;
     private final Analyzer analyzer;
+    private final Similarity similarity;
     private final Directory directory;
     private final IndexFields indexFields;
     private final int n;
@@ -44,10 +46,11 @@ class IndexTask extends Task<Boolean> {
     private final Logger logger = LoggerFactory.getLogger(IndexTask.class);
 
     IndexTask(BlockingQueue<Docket> inQueue, Version version, Analyzer analyzer,
-            Directory directory, IndexFields indexFields, int n) {
+            Similarity similarity, Directory directory, IndexFields indexFields, int n) {
         this.inQueue = inQueue;
         this.version = version;
         this.analyzer = analyzer;
+        this.similarity = similarity;
         this.directory = directory;
         this.indexFields = indexFields;
         this.n = n;
@@ -66,6 +69,7 @@ class IndexTask extends Task<Boolean> {
         try {
             IndexWriterConfig config = new IndexWriterConfig(version, analyzer);
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+            config.setSimilarity(similarity);
             iwriter = new IndexWriter(directory, config);
 
             while ((docket = inQueue.take()) != Docket.DONE) {

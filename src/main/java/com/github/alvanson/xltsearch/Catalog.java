@@ -15,6 +15,7 @@
 package com.github.alvanson.xltsearch;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
@@ -45,6 +46,7 @@ class Catalog {
     private Config config;
     private Version version;
     private Analyzer analyzer;
+    private Similarity similarity;
     private Directory directory;
     private IndexFields indexFields;
     private long indexStart;  // -1 == not currently indexing
@@ -66,8 +68,7 @@ class Catalog {
     Catalog(File root) {
         this.root = root;
         this.validConfig = false;
-        indexStart = -1;
-        clearMessages();
+        close();
     }
 
     List<String> getConfigs() {
@@ -97,36 +98,40 @@ class Catalog {
         return new Config(configDir, name);
     }
 
-    void loadConfig(String name) {
+    void open(String name) {
         close();
-        validConfig = false;
         if (name != null) {
-            config = getConfig(name);   // will create config if !exists
-            // read configuration
-            if (config.getLastUpdated() > Config.INDEX_INVALIDATED) {
-                version = config.get("lucene.version");
-                if (version != null) {
-                    Function<Version,Analyzer> analyzerFactory = config.get("lucene.analyzer");
-                    if (analyzerFactory != null) {
-                        analyzer = analyzerFactory.apply(version);
-                        Supplier<IndexFields> indexFieldsFactory = config.get("index.fields");
-                        if (indexFieldsFactory != null) {
-                            indexFields = indexFieldsFactory.get();
-                            Function<File,Directory> directoryFactory =
-                                config.get("directory.type");
-                            if (directoryFactory != null) {
-                                directory = directoryFactory.apply(config.getIndexDir());
-                                if (directory != null) {
-                                    validConfig = true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            loadConfig(name);
+            clearMessages();
         }
-        indexStart = -1;
-        clearMessages();
+    }
+
+    private void loadConfig(String name) {
+        // read configuration
+        config = getConfig(name);   // will create config if !exists
+        if (config.getLastUpdated() == Config.INDEX_INVALIDATED) { return; }
+        // version
+        version = config.get("lucene.version");
+        if (version == null) { return; }
+        // analyzer
+        Function<Version,Analyzer> analyzerFactory = config.get("lucene.analyzer");
+        if (analyzerFactory == null) { return; }
+        analyzer = analyzerFactory.apply(version);
+        // similarity
+        Supplier<Similarity> similarityFactory = config.get("scoring.model");
+        if (similarityFactory == null) { return; }
+        similarity = similarityFactory.get();
+        // indexFields
+        Supplier<IndexFields> indexFieldsFactory = config.get("index.fields");
+        if (indexFieldsFactory == null) { return; }
+        indexFields = indexFieldsFactory.get();
+        // directory
+        Function<File,Directory> directoryFactory = config.get("directory.type");
+        if (directoryFactory == null) { return; }
+        directory = directoryFactory.apply(config.getIndexDir());
+        if (directory == null) { return; }
+        // we made it: config is valid
+        validConfig = true;
     }
 
     // return list of all files (recursively) under root as relative paths
@@ -170,7 +175,8 @@ class Catalog {
         selectTask = new SelectTask(root, files, config.get("hash.algorithm"), directory,
             indexFields, parseQueue, n);
         parseTask = new ParseTask(root, parseQueue, indexQueue, n);
-        indexTask = new IndexTask(indexQueue, version, analyzer, directory, indexFields, n);
+        indexTask = new IndexTask(indexQueue, version, analyzer, similarity, directory,
+            indexFields, n);
         // communicate progress (use parseTask for current file, indexTask for %)
         parseTask.messageProperty().addListener((o, oldValue, newValue) -> updateIndexStatus());
         indexProgress.bind(indexTask.progressProperty());
@@ -201,8 +207,8 @@ class Catalog {
             sb.append(config.getValue("lucene.version"));
             sb.append(" / Analyzer: ");
             sb.append(config.getValue("lucene.analyzer"));
-            sb.append(" / Index Fields: ");
-            sb.append(config.getValue("index.fields"));
+            sb.append(" / Scoring: ");
+            sb.append(config.getValue("scoring.model"));
             indexDetails.set(sb.toString());
         }
     }
@@ -239,7 +245,7 @@ class Catalog {
             searchTask.cancel();
         }
         // initalize task
-        searchTask = new SearchTask(root, version, analyzer, directory, indexFields, query, limit);
+        searchTask = new SearchTask(root, version, analyzer, similarity, directory, indexFields, query, limit);
         searchDetails.bind(searchTask.messageProperty());
         searchTask.setOnSucceeded((event) -> {
             // populate search results
@@ -293,10 +299,11 @@ class Catalog {
             try {
                 directory.close();
             } catch (IOException ex) {
-                ex.printStackTrace();
+                logger.error("I/O exception while closing index", ex);
             }
         }
         directory = null;
+        validConfig = false;
     }
 
     String getConfigName() {
