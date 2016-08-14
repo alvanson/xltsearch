@@ -132,7 +132,7 @@ public class App extends Application {
         }
         // open folder and load config
         catalog.set(new Catalog(dir));
-        catalog.get().loadConfig(lastConfig);
+        catalog.get().open(lastConfig);
     }
 
     @FXML

@@ -241,7 +241,7 @@ class Configurator {
                 saveConfig();
             }
         }
-        catalog.get().loadConfig(config.getName());
+        catalog.get().open(config.getName());
         hide();
     }
 
@@ -260,7 +260,7 @@ class Configurator {
                 "and update the index?");
             Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
-                catalog.get().loadConfig(config.getName());
+                catalog.get().open(config.getName());
                 catalog.get().updateIndex();
                 hide();
             }

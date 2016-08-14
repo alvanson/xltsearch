@@ -66,8 +66,7 @@ class Catalog {
     Catalog(File root) {
         this.root = root;
         this.validConfig = false;
-        indexStart = -1;
-        clearMessages();
+        close();
     }
 
     List<String> getConfigs() {
@@ -97,36 +96,36 @@ class Catalog {
         return new Config(configDir, name);
     }
 
-    void loadConfig(String name) {
+    void open(String name) {
         close();
-        validConfig = false;
         if (name != null) {
-            config = getConfig(name);   // will create config if !exists
-            // read configuration
-            if (config.getLastUpdated() > Config.INDEX_INVALIDATED) {
-                version = config.get("lucene.version");
-                if (version != null) {
-                    Function<Version,Analyzer> analyzerFactory = config.get("lucene.analyzer");
-                    if (analyzerFactory != null) {
-                        analyzer = analyzerFactory.apply(version);
-                        Supplier<IndexFields> indexFieldsFactory = config.get("index.fields");
-                        if (indexFieldsFactory != null) {
-                            indexFields = indexFieldsFactory.get();
-                            Function<File,Directory> directoryFactory =
-                                config.get("directory.type");
-                            if (directoryFactory != null) {
-                                directory = directoryFactory.apply(config.getIndexDir());
-                                if (directory != null) {
-                                    validConfig = true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            loadConfig(name);
+            clearMessages();
         }
-        indexStart = -1;
-        clearMessages();
+    }
+
+    private void loadConfig(String name) {
+        // read configuration
+        config = getConfig(name);   // will create config if !exists
+        if (config.getLastUpdated() == Config.INDEX_INVALIDATED) { return; }
+        // version
+        version = config.get("lucene.version");
+        if (version == null) { return; }
+        // analyzer
+        Function<Version,Analyzer> analyzerFactory = config.get("lucene.analyzer");
+        if (analyzerFactory == null) { return; }
+        analyzer = analyzerFactory.apply(version);
+        // indexFields
+        Supplier<IndexFields> indexFieldsFactory = config.get("index.fields");
+        if (indexFieldsFactory == null) { return; }
+        indexFields = indexFieldsFactory.get();
+        // directory
+        Function<File,Directory> directoryFactory = config.get("directory.type");
+        if (directoryFactory == null) { return; }
+        directory = directoryFactory.apply(config.getIndexDir());
+        if (directory == null) { return; }
+        // we made it: config is valid
+        validConfig = true;
     }
 
     // return list of all files (recursively) under root as relative paths
@@ -293,10 +292,11 @@ class Catalog {
             try {
                 directory.close();
             } catch (IOException ex) {
-                ex.printStackTrace();
+                logger.error("I/O exception while closing index", ex);
             }
         }
         directory = null;
+        validConfig = false;
     }
 
     String getConfigName() {
