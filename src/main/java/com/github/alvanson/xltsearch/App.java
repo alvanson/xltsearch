@@ -47,6 +47,8 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 public class App extends Application {
+    public static final String XLT_VERSION = "0.0.3-SNAPSHOT";
+
     private static final String APP_CONFIG_FILE = ".xltsearch";
     private static final String APP_CONFIG_COMMENT = "XLTSearch App Configuration";
     private static final int DEFAULT_LIMIT = 100;
@@ -83,7 +85,7 @@ public class App extends Application {
     public void start(final Stage stage) {
         this.stage = stage;
         // initialize UI
-        stage.setTitle("XLTSearch " + Config.XLT_VERSION);
+        stage.setTitle("XLTSearch " + XLT_VERSION);
         stage.getIcons().addAll(new Image(getClass().getResourceAsStream("/icon32.png")),
                                 new Image(getClass().getResourceAsStream("/icon22.png")),
                                 new Image(getClass().getResourceAsStream("/icon16.png")));

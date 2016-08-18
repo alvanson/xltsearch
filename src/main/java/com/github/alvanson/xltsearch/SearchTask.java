@@ -14,7 +14,6 @@
  */
 package com.github.alvanson.xltsearch;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
@@ -23,9 +22,6 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,24 +33,15 @@ import javafx.concurrent.Task;
 
 class SearchTask extends Task<List<SearchResult>> {
     private final File root;
-    private final Version version;
-    private final Analyzer analyzer;
-    private final Similarity similarity;
-    private final Directory directory;
-    private final IndexFields indexFields;
+    private final Config config;
     private final String qstr;
     private final int limit;
 
     private final Logger logger = LoggerFactory.getLogger(SearchTask.class);
 
-    SearchTask(File root, Version version, Analyzer analyzer, Similarity similarity,
-            Directory directory, IndexFields indexFields, String qstr, int limit) {
+    SearchTask(File root, Config config, String qstr, int limit) {
         this.root = root;
-        this.version = version;
-        this.analyzer = analyzer;
-        this.similarity = similarity;
-        this.directory = directory;
-        this.indexFields = indexFields;
+        this.config = config;
         this.qstr = qstr;
         this.limit = limit;
     }
@@ -66,10 +53,11 @@ class SearchTask extends Task<List<SearchResult>> {
 
         updateMessage("Searching...");
         try {
-            ireader = DirectoryReader.open(directory);
+            ireader = DirectoryReader.open(config.getDirectory());
             IndexSearcher isearcher = new IndexSearcher(ireader);
-            isearcher.setSimilarity(similarity);
-            QueryParser parser = new QueryParser(version, indexFields.content, analyzer);
+            isearcher.setSimilarity(config.getSimilarity());
+            QueryParser parser = new QueryParser(
+                config.getVersion(), config.contentField, config.getAnalyzer());
             Query query = parser.parse(qstr);
             logger.debug("Query: {}", query);
             ScoreDoc[] hits = isearcher.search(query, limit).scoreDocs;
@@ -78,8 +66,8 @@ class SearchTask extends Task<List<SearchResult>> {
             for (ScoreDoc hit : hits) {
                 Document document = isearcher.doc(hit.doc);
                 File file = new File(
-                    root.getPath() + File.separator + document.get(indexFields.path));
-                String title = document.get(indexFields.title);
+                    root.getPath() + File.separator + document.get(config.pathField));
+                String title = document.get(config.titleField);
                 if (title == null) {
                     title = "";
                 }

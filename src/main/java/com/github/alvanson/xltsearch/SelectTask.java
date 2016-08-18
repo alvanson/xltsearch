@@ -20,7 +20,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.store.Directory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,19 +38,14 @@ import javafx.concurrent.Task;
 
 class SelectTask extends Task<Boolean> {
     private final File root;
-    private final String algorithm;
-    private final Directory directory;
-    private final IndexFields indexFields;
+    private final Config config;
     private final BlockingQueue<Docket> outQueue;
 
     private final Logger logger = LoggerFactory.getLogger(SelectTask.class);
 
-    SelectTask(File root, String algorithm, Directory directory, IndexFields indexFields,
-            BlockingQueue<Docket> outQueue) {
+    SelectTask(File root, Config config, BlockingQueue<Docket> outQueue) {
         this.root = root;
-        this.algorithm = algorithm;
-        this.directory = directory;
-        this.indexFields = indexFields;
+        this.config = config;
         this.outQueue = outQueue;
     }
 
@@ -66,7 +60,7 @@ class SelectTask extends Task<Boolean> {
             Map<String,String> hashSums = getHashSums();
             long workLeft = Math.max(files.size(), hashSums.size());    // close enough
             // avoid repeatedly recreating digest object and bytes array
-            MessageDigest digest = MessageDigest.getInstance(algorithm);
+            MessageDigest digest = MessageDigest.getInstance(config.getHashAlgorithm());
             byte[] bytes = new byte[8192];
             // select files
             for (String relPath : files) {
@@ -101,7 +95,7 @@ class SelectTask extends Task<Boolean> {
             result = true;
         } catch (NoSuchAlgorithmException ex) {
             updateMessage("exception");
-            logger.error("No such algorithm: {}", algorithm, ex);
+            logger.error("No such algorithm: {}", config.getHashAlgorithm(), ex);
         } catch (InterruptedException ex) {
             if (isCancelled()) {
                 updateMessage("cancelled");
@@ -139,17 +133,17 @@ class SelectTask extends Task<Boolean> {
         Map<String,String> hashSums = new HashMap<>();
         DirectoryReader ireader = null;
         try {
-            if (DirectoryReader.indexExists(directory)) {
+            if (DirectoryReader.indexExists(config.getDirectory())) {
                 // read hashsums from `directory`
-                ireader = DirectoryReader.open(directory);
+                ireader = DirectoryReader.open(config.getDirectory());
                 IndexSearcher isearcher = new IndexSearcher(ireader);
                 Query query = new MatchAllDocsQuery();
                 ScoreDoc[] hits = isearcher.search(query, ireader.numDocs()+1).scoreDocs;
                 // collect results
                 for (ScoreDoc hit : hits) {
                     Document document = isearcher.doc(hit.doc);
-                    String relPath = document.get(indexFields.path);
-                    String hashSum = document.get(indexFields.hashSum);
+                    String relPath = document.get(config.pathField);
+                    String hashSum = document.get(config.hashSumField);
                     if (relPath != null && hashSum != null) {
                         hashSums.put(relPath, hashSum);
                     }

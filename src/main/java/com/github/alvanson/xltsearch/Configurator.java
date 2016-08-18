@@ -45,7 +45,7 @@ import javafx.stage.Stage;
 class Configurator {
     private static final int SCENE_WIDTH = 640;
     private static final int SCENE_HEIGHT = 480;
-    private static final int BUTTON_WIDTH = 120;
+    private static final int BUTTON_WIDTH = 100;
 
     @FXML private BorderPane border;
     @FXML private TextField newField;
@@ -153,23 +153,23 @@ class Configurator {
             grid.add(new Label(" "), 0, row, 3, 1);  // row spacer
 
             // index status
-            final Label statusMessage = new Label(config.getIndexStatus());
+            final Label statusMessage = new Label(config.getStatus());
             statusMessage.setAlignment(Pos.BASELINE_RIGHT);
             statusMessage.setMaxWidth(Double.MAX_VALUE);
 
             grid.add(statusMessage, 0, row+1, 3, 1);
 
-            final Button updateIndexButton = new Button("Update Index");
+            final Button updateIndexButton = new Button("Update");
             updateIndexButton.setPrefWidth(BUTTON_WIDTH);
-            final Button clearIndexButton = new Button("Clear Index");
-            clearIndexButton.setPrefWidth(BUTTON_WIDTH);
+            final Button rebuildIndexButton = new Button("Rebuild");
+            rebuildIndexButton.setPrefWidth(BUTTON_WIDTH);
 
             long lastUpdated = config.getLastUpdated();
             if (lastUpdated == Config.INDEX_INVALIDATED) {
-                grid.add(clearIndexButton, 2, row+2);
+                grid.add(rebuildIndexButton, 2, row+2);
             } else {
                 if (lastUpdated < 0) {
-                    updateIndexButton.setText("Build Index");
+                    updateIndexButton.setText("Build");
                 }
                 grid.add(updateIndexButton, 2, row+2);
             }
@@ -188,7 +188,7 @@ class Configurator {
             grid.add(deleteButton, 2, row+5);
 
             updateIndexButton.setOnAction((event) -> updateIndex());
-            clearIndexButton.setOnAction((event) -> clearIndex());
+            rebuildIndexButton.setOnAction((event) -> rebuildIndex());
             saveButton.setOnAction((event) -> saveConfig());
             deleteButton.setOnAction((event) -> deleteConfig());
         }
@@ -267,22 +267,24 @@ class Configurator {
         }
     }
 
-    private void clearIndex() {
+    private void rebuildIndex() {
         if (dirty) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Configuration not saved");
-            alert.setContentText("Configuration must be saved before clearing index.");
+            alert.setContentText("Configuration must be saved before rebuilding index.");
             alert.showAndWait();
         } else {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Confirmation");
-            alert.setHeaderText("Clear index");
-            alert.setContentText("Are you sure you want to clear the index?");
+            alert.setHeaderText("Rebuild index");
+            alert.setContentText("Are you sure you want to rebuild the index?");
             Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
-                config.clearIndex();
-                drawCenterPane();
+                config.deleteIndex();
+                catalog.get().open(config.getName());
+                catalog.get().updateIndex();
+                hide();
             }
         }
     }
@@ -371,7 +373,7 @@ class Configurator {
     private void showAbout() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About");
-        alert.setHeaderText("XLTSearch " + Config.XLT_VERSION);
+        alert.setHeaderText("XLTSearch " + App.XLT_VERSION);
         alert.setContentText("Copyright 2016 Evan A. Thompson\n" +
                              "https://github.com/alvanson/xltsearch");
         alert.showAndWait();

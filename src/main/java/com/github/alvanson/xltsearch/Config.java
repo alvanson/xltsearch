@@ -26,6 +26,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.apache.tika.metadata.Message;
+import org.apache.tika.metadata.Property;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +41,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -45,11 +49,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 class Config {
-    public static final String XLT_VERSION = "0.0.3-SNAPSHOT";
-
-    public static final long INDEX_UPDATE_FAILED = -1;
-    public static final long INDEX_NEVER_CREATED = -2;
-    public static final long INDEX_INVALIDATED = -3;
+    static final long INDEX_UPDATE_FAILED = -1;
+    static final long INDEX_NEVER_CREATED = -2;
+    static final long INDEX_INVALIDATED = -3;
 
     private static final String CONFIG_FILE = "config";
     private static final String CONFIG_COMMENT = "XLTSearch Index Configuration";
@@ -94,11 +96,6 @@ class Config {
             });
             put("RAM", (f) -> new RAMDirectory());
         }});
-    // index.fields
-    private static final Map<String,Supplier<IndexFields>> INDEX_FIELDS =
-        Collections.unmodifiableMap(new LinkedHashMap<String,Supplier<IndexFields>>() {{
-            put("Standard", IndexFields::new);
-        }});
     // property map
     private static final Map<String,Map> PROPERTY_MAP =
         Collections.unmodifiableMap(new LinkedHashMap<String,Map>() {{
@@ -107,13 +104,58 @@ class Config {
             put("lucene.analyzer", LUCENE_ANALYZER);
             put("scoring.model", SCORING_MODEL);
             put("directory.type", DIRECTORY_TYPE);
-            put("index.fields", INDEX_FIELDS);
         }});
     private static final String INDEX_DIR = "index";
+
+    // index fields
+    final String contentField = "content";
+    final Map<String,Property> metadataFields =
+        Collections.unmodifiableMap(new HashMap<String,Property>() {{
+            put("recipient", Property.internalText(Message.MESSAGE_RECIPIENT_ADDRESS));
+            put("from", Property.internalText(Message.MESSAGE_FROM));
+            put("to", Property.internalText(Message.MESSAGE_TO));
+            put("cc", Property.internalText(Message.MESSAGE_CC));
+            put("bcc", Property.internalText(Message.MESSAGE_BCC));
+            put("format", TikaCoreProperties.FORMAT);
+            put("identifier", TikaCoreProperties.IDENTIFIER);
+            put("contributor", TikaCoreProperties.CONTRIBUTOR);
+            put("coverage", TikaCoreProperties.COVERAGE);
+            put("creator", TikaCoreProperties.CREATOR);
+            put("modifier", TikaCoreProperties.MODIFIER);
+            put("creatortool", TikaCoreProperties.CREATOR_TOOL);
+            put("language", TikaCoreProperties.LANGUAGE);
+            put("publisher", TikaCoreProperties.PUBLISHER);
+            put("relation", TikaCoreProperties.RELATION);
+            put("rights", TikaCoreProperties.RIGHTS);
+            put("source", TikaCoreProperties.SOURCE);
+            put("type", TikaCoreProperties.TYPE);
+            put("title", TikaCoreProperties.TITLE);
+            put("description", TikaCoreProperties.DESCRIPTION);
+            put("keywords", TikaCoreProperties.KEYWORDS);
+            put("created", TikaCoreProperties.CREATED);
+            put("modified", TikaCoreProperties.MODIFIED);
+            put("printdate", TikaCoreProperties.PRINT_DATE);
+            put("metadatadate", TikaCoreProperties.METADATA_DATE);
+            put("latitude", TikaCoreProperties.LATITUDE);
+            put("longitude", TikaCoreProperties.LONGITUDE);
+            put("altitude", TikaCoreProperties.ALTITUDE);
+            put("rating", TikaCoreProperties.RATING);
+            put("comments", TikaCoreProperties.COMMENTS);
+        }});
+    final String pathField = "path";
+    final String titleField = "title";
+    final String hashSumField = "hashsum";
 
     private final File configDir;
     private final String name;
     private final PersistentProperties properties;
+
+    private boolean resolved = false;
+    private String hashAlgorithm = null;
+    private Version version = null;
+    private Analyzer analyzer = null;
+    private Similarity similarity = null;
+    private Directory directory = null;
 
     private final Logger logger = LoggerFactory.getLogger(Config.class);
 
@@ -125,37 +167,71 @@ class Config {
             CONFIG_COMMENT, getClass().getResourceAsStream(CONFIG_DEFAULTS));
     }
 
+    void resolve() {
+        if (resolved) { return; }
+        // else: resolved == false
+        if (getLastUpdated() == INDEX_INVALIDATED) { return; }
+        // hashAlgorithm
+        hashAlgorithm = get("hash.algorithm");
+        if (hashAlgorithm == null) { return; }
+        // version
+        version = get("lucene.version");
+        if (version == null) { return; }
+        // analyzer
+        Function<Version,Analyzer> analyzerFactory = get("lucene.analyzer");
+        if (analyzerFactory == null) { return; }
+        analyzer = analyzerFactory.apply(version);
+        // similarity
+        Supplier<Similarity> similarityFactory = get("scoring.model");
+        if (similarityFactory == null) { return; }
+        similarity = similarityFactory.get();
+        // directory
+        Function<File,Directory> directoryFactory = get("directory.type");
+        if (directoryFactory == null) { return; }
+        directory = directoryFactory.apply(
+            new File(configDir.getPath() + File.separator + INDEX_DIR));
+        if (directory == null) { return; }
+        // we made it: config is properly resolved
+        resolved = true;
+    }
+
+    // returns object corresponding to current value for `propertyName`
+    private <T> T get(String propertyName) {
+        if (!PROPERTY_MAP.containsKey(propertyName)) {
+            logger.error("Unrecognized property name {}", propertyName);
+            return null;
+        }
+        // get value as String
+        String option = getValue(propertyName);
+        if (option == null) {
+            logger.error("No default for property {}", propertyName);
+            return null;
+        }
+        // look up object
+        T t = (T) PROPERTY_MAP.get(propertyName).get(option);
+        if (t == null) {
+            logger.error("Unrecognized option for {}: {}", propertyName, option);
+            return null;
+        }
+        return t;
+    }
+
+    String getName() { return name; }
+
     Set<String> getPropertyNames() {
         return PROPERTY_MAP.keySet();
     }
 
     Set<String> getOptions(String propertyName) {
-        Set<String> options = null;
-        if (PROPERTY_MAP.containsKey(propertyName)) {
-            options = PROPERTY_MAP.get(propertyName).keySet();
-        } else {
+        if (!PROPERTY_MAP.containsKey(propertyName)) {
             logger.error("Unrecognized property name {}", propertyName);
+            return null;
         }
-        return options;
+        return PROPERTY_MAP.get(propertyName).keySet();
     }
 
     String getValue(String propertyName) {
         return properties.getProperty(propertyName);
-    }
-
-    String getIndexStatus() {
-        StringBuilder sb = new StringBuilder();
-        long lastUpdated = getLastUpdated();
-        if (lastUpdated >= 0) {
-            sb.append("Last updated " + new Date(lastUpdated).toString());
-        } else if (lastUpdated == INDEX_UPDATE_FAILED) {
-            sb.append("Last update failed");
-        } else if (lastUpdated == INDEX_NEVER_CREATED) {
-            sb.append("Not yet created");
-        } else {
-            sb.append("Index invalidated");
-        }
-        return sb.toString();
     }
 
     long getLastUpdated() {
@@ -173,53 +249,80 @@ class Config {
         return lastUpdated;
     }
 
-    // returns object corresponding to current value for `propertyName`
-    <T> T get(String propertyName) {
-        T t = null;
-        if (PROPERTY_MAP.containsKey(propertyName)) {
-            String option = properties.getProperty(propertyName);
-            if (option != null) {
-                t = (T) PROPERTY_MAP.get(propertyName).get(option);
-                if (t == null) {
-                    logger.error("Unrecognized option for {}: {}", propertyName, option);
-                }
-            } else {
-                logger.error("No default for property {}", propertyName);
-            }
-        } else {
-            logger.error("Unrecognized property name {}", propertyName);
-        }
-        return t;
+    String getDetails() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        sb.append(getName());
+        sb.append("]: ");
+        sb.append(getValue("directory.type"));
+        sb.append(" / Lucene ");
+        sb.append(getValue("lucene.version"));
+        sb.append(" / Analyzer: ");
+        sb.append(getValue("lucene.analyzer"));
+        sb.append(" / Scoring: ");
+        sb.append(getValue("scoring.model"));
+        return sb.toString();
     }
 
-    File getIndexDir() {
-        return new File(configDir.getPath() + File.separator + INDEX_DIR);
+    String getStatus() {
+        StringBuilder sb = new StringBuilder();
+        long lastUpdated = getLastUpdated();
+        if (lastUpdated >= 0) {
+            sb.append("Last updated " + new Date(lastUpdated).toString());
+        } else if (lastUpdated == INDEX_UPDATE_FAILED) {
+            sb.append("Last update failed");
+        } else if (lastUpdated == INDEX_NEVER_CREATED) {
+            sb.append("Not yet created");
+        } else {
+            sb.append("Index invalidated");
+        }
+        return sb.toString();
     }
+
+    boolean isResolved() { return resolved; }
+    String getHashAlgorithm() { return hashAlgorithm; }
+    Version getVersion() { return version; }
+    Analyzer getAnalyzer() { return analyzer; }
+    Similarity getSimilarity() { return similarity; }
+    Directory getDirectory() { return directory; }
 
     void set(String propertyName, String value) {
-        // any change to properties (other than last updated) invalidates current index
-        if (PROPERTY_MAP.containsKey(propertyName) && !propertyName.equals("last.updated")) {
-            invalidateIndex();
+        if (resolved) {
+            logger.error("Cannot set properties on resolved config");
+            return;
         }
+        // calling set invalidates index
+        invalidateIndex();
         properties.setProperty(propertyName, value);
     }
 
     void setLastUpdated(long value) {
-        set("last.updated", Long.toString(value));
+        properties.setProperty("last.updated", Long.toString(value));
     }
 
-    void invalidateIndex() {
+    void close() {
+        if (directory != null) {
+            try {
+                directory.close();
+            } catch (IOException ex) {
+                logger.error("I/O exception while closing index", ex);
+            }
+        }
+        directory = null;
+    }
+
+    private void invalidateIndex() {
         if (!Long.toString(INDEX_NEVER_CREATED).equals(properties.getProperty("last.updated"))) {
-            set("last.updated", Long.toString(INDEX_INVALIDATED));
+            setLastUpdated(INDEX_INVALIDATED);
         }
     }
 
-    void clearIndex() {
+    void deleteIndex() {
         try {
-            deltree(getIndexDir());
-            set("last.updated", Long.toString(INDEX_NEVER_CREATED));
+            deltree(new File(configDir.getPath() + File.separator + INDEX_DIR));
+            setLastUpdated(INDEX_NEVER_CREATED);
         } catch (IOException ex) {
-            logger.error("Could not clear index", ex);
+            logger.error("Could not delete index", ex);
         }
     }
 
@@ -251,6 +354,4 @@ class Config {
             });
         }
     }
-
-    String getName() { return name; }
 }

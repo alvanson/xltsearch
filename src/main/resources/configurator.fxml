@@ -40,7 +40,7 @@
     </left>
     <bottom>
         <fx:define>
-            <Double fx:id="BUTTON_WIDTH" fx:value="120" />
+            <Double fx:id="BUTTON_WIDTH" fx:value="100" />
         </fx:define>
         <HBox spacing="10">
             <minHeight><HBox fx:constant="USE_PREF_SIZE" /></minHeight>
