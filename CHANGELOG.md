@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.1.0] 2016-11-21
+------------------
+  * Added support for Okapi BM25Similarity scoring model.
+  * Improved file checksum handling.
+  * Code refactoring.
+
 [0.0.2] 2016-08-12
 ------------------
   * Includes SLF4J 1.7.7.
@@ -14,5 +20,6 @@ Changelog
   * Includes Apache Lucene 4.6.1 and Apache Tika 1.13.
   * Initial release.
 
+[0.1.0]: https://github.com/alvanson/xltsearch/releases/tag/v0.1.0
 [0.0.2]: https://github.com/alvanson/xltsearch/releases/tag/v0.0.2
 [0.0.1]: https://github.com/alvanson/xltsearch/releases/tag/v0.0.1

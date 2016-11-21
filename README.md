@@ -3,11 +3,11 @@ XLTSearch
 
 XLTSearch is a high-performance, portable and configurable desktop search application / information retrieval system intended for fast, full-text and metadata searches over a large but relatively unchanging collection of documents.  XLTSearch uses the JavaFX platform (X), the Apache Lucene full-text search library (L) and the Apache Tika content analysis toolkit (T).  Other than Java and JavaFX 8, XLTSearch has no other external dependencies, enabling the creation of portable, fully searchable document repositories.
 
-**Current version:** XLTSearch 0.0.2 includes Apache Lucene 4.6.1, Apache Tika 1.13 and SLF4J 1.7.7.
+**Current version:** XLTSearch 0.1.0 includes Apache Lucene 4.6.1, Apache Tika 1.13 and SLF4J 1.7.7.
 
 ![screenshot](https://i.imgur.com/BGeHXj1.png)
 
-  * [Download XLTSearch 0.0.2](https://github.com/alvanson/xltsearch/releases/download/v0.0.2/xltsearch-0.0.2.jar)
+  * [Download XLTSearch 0.1.0](https://github.com/alvanson/xltsearch/releases/download/v0.1.0/xltsearch-0.1.0.jar)
   * [Changelog](CHANGELOG.md)
 
 Motivation

@@ -47,7 +47,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 public class App extends Application {
-    public static final String XLT_VERSION = "0.0.3-SNAPSHOT";
+    public static final String XLT_VERSION = "0.1.0";
 
     private static final String APP_CONFIG_FILE = ".xltsearch";
     private static final String APP_CONFIG_COMMENT = "XLTSearch App Configuration";
