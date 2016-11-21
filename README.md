@@ -5,7 +5,7 @@ XLTSearch is a high-performance, portable and configurable desktop search applic
 
 **Current version:** XLTSearch 0.1.0 includes Apache Lucene 4.6.1, Apache Tika 1.13 and SLF4J 1.7.7.
 
-![screenshot](https://i.imgur.com/BGeHXj1.png)
+![screenshot](http://i.imgur.com/JaaSNwj.png)
 
   * [Download XLTSearch 0.1.0](https://github.com/alvanson/xltsearch/releases/download/v0.1.0/xltsearch-0.1.0.jar)
   * [Changelog](CHANGELOG.md)
